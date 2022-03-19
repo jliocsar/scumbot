@@ -2,6 +2,7 @@ import 'dotenv-safe/config'
 import type { Client } from 'discord.js'
 import signale from 'signale'
 import axios from 'axios'
+import Express from 'express'
 
 import { createClient } from './client'
 import { setupClientEvents } from './events'
@@ -10,6 +11,7 @@ import { setupClientEvents } from './events'
  * Hacky keep-alive
  * Get rid of this later!
  ***********************/
+const PORT = process.env.PORT || 3000
 const MINUTE = 60 * 1000
 const BACON_IPSUM_API_URL = 'https://baconipsum.com/api/'
 const axiosClient = axios.create({ baseURL: BACON_IPSUM_API_URL })
@@ -24,6 +26,16 @@ const customLogger = new signale.Signale({
   },
 })
 function keepBotAlive() {
+  const app = Express()
+  app.get('/', (req, res) => {
+    res.json({
+      bacon: '🍖',
+    })
+  })
+  app.listen(PORT, () =>
+    customLogger.info('Keep-alive server listening on port', PORT),
+  )
+
   setInterval(async () => {
     const { data } = await axiosClient.get('/', {
       params: {
