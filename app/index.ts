@@ -46,7 +46,7 @@ function keepBotAlive() {
     const [quote] = data
 
     customLogger.bacon('Keeping the bot alive with bacon:', quote)
-  }, MINUTE / 2)
+  }, 5 * MINUTE)
 }
 keepBotAlive()
 /*********************
