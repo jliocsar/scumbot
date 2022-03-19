@@ -1,0 +1,13 @@
+version: 0.0
+os: linux
+files:
+  - source: /
+    destination: /usr/share/scumbot/app
+    overwrite: true
+hooks:
+  BeforeInstall:
+    - location: scripts/before_install_hook.sh
+      timeout: 300
+  AfterInstall:
+    - location: scripts/after_install_hook.sh
+      timeout: 300
