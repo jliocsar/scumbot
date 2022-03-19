@@ -6,6 +6,7 @@ import Express from 'express'
 
 import { createClient } from './client'
 import { setupClientEvents } from './events'
+import { registerGlobalCommands } from './register-global-commands'
 
 /*********************
  * Hacky keep-alive
@@ -64,6 +65,7 @@ function setupClient(client: Client) {
 
 async function startDiscordBot() {
   const client = await createClient(setupClient)
+  await registerGlobalCommands()
   await setupClientEvents(client)
 }
 

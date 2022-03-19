@@ -1,4 +1,4 @@
-export const COMMAND_PREFIX = '!'
+export const COMMAND_PREFIX = '/'
 
 export enum Command {
   Help = 'help',
@@ -6,4 +6,6 @@ export enum Command {
   Stop = 'stop',
   Skip = 'skip',
   Queue = 'queue',
+  Resume = 'resume',
+  Pause = 'pause',
 }

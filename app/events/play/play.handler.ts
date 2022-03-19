@@ -14,16 +14,15 @@ import { CachedPlayQueue } from './play.helpers'
 
 type BotVideoState = {
   isPlaying: boolean
-  audioPlayer: AudioPlayer | undefined
-  subscription: PlayerSubscription | undefined
+  audioPlayer?: AudioPlayer
+  subscription?: PlayerSubscription
+  lastMessage?: Message
 }
 
 export const videosQueue = new CachedPlayQueue()
 
 export const botVideoState: BotVideoState = {
   isPlaying: false,
-  audioPlayer: undefined,
-  subscription: undefined,
 }
 
 function handlePlaying() {
@@ -31,7 +30,9 @@ function handlePlaying() {
 }
 
 function handlePause() {
-  console.log('paused')
+  if (botVideoState.lastMessage) {
+    botVideoState.lastMessage.reply('Video is paused, dawg')
+  }
 }
 
 function handleIdle() {
@@ -105,9 +106,17 @@ export async function playEventHandler(
   message: Message,
   videoUrlOrName: string,
 ) {
-  const isUrl = videoUrlOrName.startsWith('https://')
+  if (!videoUrlOrName) {
+    message.reply('You need to provide a video url')
+    return
+  }
 
-  if (isUrl) {
+  const youtubeUrlMatch =
+    /^https:\/\/www.youtube.com\/watch\?v=([a-zA-Z0-9_-]{11})$/
+  const isYoutubeUrl = youtubeUrlMatch.test(videoUrlOrName)
+
+  if (isYoutubeUrl) {
+    botVideoState.lastMessage = message
     await createVideoPlayingConnection(message, videoUrlOrName)
     return
   }
