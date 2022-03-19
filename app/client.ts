@@ -12,6 +12,8 @@ export async function createClient(setupClientFn: SetupClientFn) {
       Intents.FLAGS.DIRECT_MESSAGES,
       Intents.FLAGS.GUILD_VOICE_STATES,
       Intents.FLAGS.GUILD_WEBHOOKS,
+      Intents.FLAGS.GUILD_PRESENCES,
+      Intents.FLAGS.GUILD_SCHEDULED_EVENTS,
     ],
   })
 
