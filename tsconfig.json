@@ -12,6 +12,6 @@
     "baseUrl": ".",
     "paths": {}
   },
-  "include": ["src/**/*.ts"],
+  "include": ["app/**/*.ts"],
   "exclude": ["node_modules"]
 }

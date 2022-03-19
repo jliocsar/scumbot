@@ -27,8 +27,8 @@ const customLogger = new signale.Signale({
 })
 function keepBotAlive() {
   const app = Express()
-  app.get('/', (req, res) => {
-    res.json({
+  app.get('/', (request, response) => {
+    response.json({
       bacon: '🍖',
     })
   })
