@@ -25,4 +25,8 @@ export class CachedPlayQueue {
   public isEmpty() {
     return !this.queue.length
   }
+
+  public clear() {
+    store.set(StoreKey.PlayQueue, [])
+  }
 }

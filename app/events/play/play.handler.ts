@@ -1,4 +1,4 @@
-import type { Message } from 'discord.js'
+import type { AwaitMessagesOptions, Message } from 'discord.js'
 import {
   AudioPlayer,
   AudioPlayerStatus,
@@ -9,6 +9,7 @@ import {
   VoiceConnection,
 } from '@discordjs/voice'
 import ytdl from 'discord-ytdl-core'
+import usetube from 'usetube'
 
 import { CachedPlayQueue } from './play.helpers'
 
@@ -36,6 +37,7 @@ function handlePause() {
 }
 
 function handleIdle() {
+  botVideoState.isPlaying = false
   if (!videosQueue.isEmpty()) {
     const videoUrl = videosQueue.unshift()
     playVideo(videoUrl)
@@ -64,11 +66,14 @@ export function playVideo(videoUrl: string) {
 }
 
 function setupConnectionEvents(connection: VoiceConnection) {
-  process.on('beforeExit', connection.destroy)
+  const handleDisconnect = () => {
+    videosQueue.clear()
+    connection.destroy()
+  }
 
-  process.on('exit', () => {
-    process.off('beforeExit', connection.destroy)
-  })
+  connection.on('error', videosQueue.clear)
+  process.on('beforeExit', handleDisconnect)
+  process.on('exit', handleDisconnect)
 }
 
 async function createVideoPlayingConnection(
@@ -102,22 +107,60 @@ async function createVideoPlayingConnection(
   playVideo(videoUrl)
 }
 
+async function searchYouTubeUrl(message: Message, input: string) {
+  const { videos } = await usetube.searchVideo(input)
+  const filter: AwaitMessagesOptions = {
+    max: 1,
+    time: 30000,
+    errors: ['time'],
+  }
+
+  const videosMessages = videos
+    .map((video, videoIndex) => `**[${videoIndex + 1}]**: ${video.title}`)
+    .join('\n')
+
+  await message.reply(videosMessages)
+
+  const collected = await message.channel.awaitMessages(filter)
+  const video = collected.first()
+
+  if (video) {
+    const videoIndex = Number(video.content) - 1
+    const selectedVideo = videos[videoIndex]
+
+    if (selectedVideo) {
+      return `https://www.youtube.com/watch?v=${selectedVideo.id}`
+    }
+
+    return undefined
+  }
+}
+
 export async function playEventHandler(
   message: Message,
-  videoUrlOrName: string,
+  videoUrlOrSearch: string,
+  ...searchRest: string[]
 ) {
-  if (!videoUrlOrName) {
+  botVideoState.lastMessage = message
+
+  if (!videoUrlOrSearch) {
     message.reply('You need to provide a video url')
     return
   }
 
-  const youtubeUrlMatch =
-    /^https:\/\/www.youtube.com\/watch\?v=([a-zA-Z0-9_-]{11})$/
-  const isYoutubeUrl = youtubeUrlMatch.test(videoUrlOrName)
+  const youtubeUrlMatch = /youtube\.com/g
+  const isYoutubeUrl = youtubeUrlMatch.test(videoUrlOrSearch)
 
   if (isYoutubeUrl) {
-    botVideoState.lastMessage = message
-    await createVideoPlayingConnection(message, videoUrlOrName)
+    await createVideoPlayingConnection(message, videoUrlOrSearch)
+    return
+  }
+
+  const searchTerms = [videoUrlOrSearch, ...searchRest].join(' ')
+  const searchedUrl = await searchYouTubeUrl(message, searchTerms)
+
+  if (searchedUrl) {
+    await createVideoPlayingConnection(message, searchedUrl)
     return
   }
 

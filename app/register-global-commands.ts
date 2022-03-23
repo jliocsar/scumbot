@@ -1,34 +1,37 @@
-import axios from 'axios'
-import signale from 'signale'
+import { REST } from '@discordjs/rest'
+import { Routes } from 'discord-api-types/v9'
+import { SlashCommandBuilder } from '@discordjs/builders'
 
 import {
   APPLICATION_ID,
   DISCORD_TOKEN,
 } from './constants/environment.constants'
-import { eventsMeta } from './events/events-meta'
+import { client } from './client'
+
+const rest = new REST({ version: '9' }).setToken(DISCORD_TOKEN)
 
 export async function registerGlobalCommands() {
-  const axiosClient = axios.create({
-    baseURL: `https://discord.com/api/v8/applications/${APPLICATION_ID}`,
-  })
+  try {
+    const guilds = await client.guilds.fetch()
+    const testCommand = new SlashCommandBuilder()
+      .setName('test')
+      .setDescription('Test command')
+      .toJSON()
 
-  const headers = {
-    Authorization: `Bot ${DISCORD_TOKEN}`,
+    await Promise.all(
+      guilds.map(guild => {
+        return rest.put(
+          Routes.applicationGuildCommands(APPLICATION_ID, guild.id),
+          {
+            headers: {
+              Authorization: `Bot ${DISCORD_TOKEN}`,
+            },
+            body: [testCommand],
+          },
+        )
+      }),
+    )
+  } catch (error) {
+    console.error(error)
   }
-
-  await Promise.all(
-    eventsMeta.map(async eventMeta => {
-      try {
-        const { data } = await axiosClient.post('/commands', eventMeta, {
-          headers,
-        })
-
-        if (!data?.id) {
-          throw new Error('No id returned from registering command')
-        }
-      } catch (error: any) {
-        signale.error(error.response.data)
-      }
-    }),
-  )
 }
