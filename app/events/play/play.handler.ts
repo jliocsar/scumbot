@@ -8,13 +8,15 @@ import {
   PlayerSubscription,
   VoiceConnection,
 } from '@discordjs/voice'
-import ytdl from 'discord-ytdl-core'
-import usetube from 'usetube'
+import signale from 'signale'
+import play from 'play-dl'
+import * as usetube from 'usetube'
 
 import { CachedPlayQueue } from './play.helpers'
 
 type BotVideoState = {
   isPlaying: boolean
+  hasMountedErrorEvents: boolean
   audioPlayer?: AudioPlayer
   subscription?: PlayerSubscription
   lastMessage?: Message
@@ -24,6 +26,7 @@ export const videosQueue = new CachedPlayQueue()
 
 export const botVideoState: BotVideoState = {
   isPlaying: false,
+  hasMountedErrorEvents: false,
 }
 
 function handlePlaying() {
@@ -44,24 +47,41 @@ function handleIdle() {
   }
 }
 
-export function playVideo(videoUrl: string) {
-  const buffer = ytdl(videoUrl, {
-    filter: 'audioonly',
-    opusEncoded: false,
-    fmt: 'mp3',
-    encoderArgs: ['-af', 'bass=g=10,dynaudnorm=f=200'],
+function handleAudioPlayerError(error: Error) {
+  const { message } = error
+
+  signale.error({
+    prefix: 'Audio player error error',
+    message,
   })
-  const resource = createAudioResource(buffer)
+}
 
-  if (resource && botVideoState.subscription && botVideoState.audioPlayer) {
-    botVideoState.audioPlayer.play(resource)
+export async function playVideo(videoUrl: string) {
+  const { stream, type: inputType } = await play.stream(videoUrl)
 
-    botVideoState.subscription.player.on(
-      AudioPlayerStatus.Playing,
-      handlePlaying,
-    )
-    botVideoState.subscription.player.on(AudioPlayerStatus.Idle, handleIdle)
-    botVideoState.subscription.player.on(AudioPlayerStatus.Paused, handlePause)
+  const resource = createAudioResource(stream, {
+    inputType,
+  })
+
+  if (botVideoState.audioPlayer) {
+    if (!botVideoState.hasMountedErrorEvents) {
+      botVideoState.audioPlayer?.on('error', handleAudioPlayerError)
+      botVideoState.hasMountedErrorEvents = true
+    }
+
+    if (resource && botVideoState.subscription) {
+      botVideoState.audioPlayer.play(resource)
+
+      botVideoState.subscription.player.on(
+        AudioPlayerStatus.Playing,
+        handlePlaying,
+      )
+      botVideoState.subscription.player.on(AudioPlayerStatus.Idle, handleIdle)
+      botVideoState.subscription.player.on(
+        AudioPlayerStatus.Paused,
+        handlePause,
+      )
+    }
   }
 }
 
@@ -104,7 +124,7 @@ async function createVideoPlayingConnection(
   botVideoState.audioPlayer = createAudioPlayer()
   botVideoState.subscription = connection.subscribe(botVideoState.audioPlayer)
 
-  playVideo(videoUrl)
+  await playVideo(videoUrl)
 }
 
 async function searchYouTubeUrl(message: Message, input: string) {
