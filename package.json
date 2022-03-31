@@ -10,6 +10,7 @@
     "discord.js": "^13.6.0",
     "dotenv-safe": "^8.2.0",
     "esbuild-node-loader": "^0.8.0",
+    "express": "^4.17.3",
     "ffmpeg-static": "^5.0.0",
     "node-cache": "^5.1.2",
     "play-dl": "^1.9.2",
@@ -25,6 +26,7 @@
     "build": "echo 'Built with bacon 🍖'"
   },
   "devDependencies": {
+    "@types/express": "^4.17.13",
     "@types/node": "^17.0.21",
     "@types/signale": "^1.4.4",
     "@types/usetube": "^2.1.0",
