@@ -8,4 +8,5 @@ export enum Command {
   Queue = 'queue',
   Resume = 'resume',
   Pause = 'pause',
+  Radio = 'radio',
 }

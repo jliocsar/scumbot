@@ -86,12 +86,17 @@ export async function playVideo(videoUrl: string) {
 }
 
 function setupConnectionEvents(connection: VoiceConnection) {
-  const handleDisconnect = () => {
+  const handleVideoQueueClear = () => {
+    botVideoState.isPlaying = false
     videosQueue.clear()
+  }
+
+  const handleDisconnect = () => {
+    handleVideoQueueClear()
     connection.destroy()
   }
 
-  connection.on('error', videosQueue.clear)
+  connection.on('error', handleVideoQueueClear)
   process.on('beforeExit', handleDisconnect)
   process.on('exit', handleDisconnect)
 }
@@ -105,11 +110,11 @@ async function createVideoPlayingConnection(
     return message.reply('Video added to the queue')
   }
 
-  if (!message.guildId || !message?.member?.voice?.channelId) {
+  if (!message.guildId || !message.member?.voice.channelId) {
     return message.reply('You need to be in a voice channel to play music')
   }
 
-  if (!message?.guild?.voiceAdapterCreator) {
+  if (!message.guild?.voiceAdapterCreator) {
     return message.reply("I can't play music without a voice adapter")
   }
 

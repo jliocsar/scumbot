@@ -7,6 +7,7 @@ import { stopEventHandler } from './stop'
 import { queueEventHandler } from './queue'
 import { resumeEventHandler } from './resume'
 import { pauseEventHandler } from './pause'
+import { radioEventHandler } from './radio'
 
 export const eventMap: EventMap = {
   [Command.Play]: playEventHandler,
@@ -15,4 +16,5 @@ export const eventMap: EventMap = {
   [Command.Queue]: queueEventHandler,
   [Command.Resume]: resumeEventHandler,
   [Command.Pause]: pauseEventHandler,
+  [Command.Radio]: radioEventHandler,
 }
