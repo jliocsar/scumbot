@@ -1,4 +1,4 @@
-import type { AwaitMessagesOptions, Message } from 'discord.js'
+import type { AwaitMessagesOptions, CommandInteraction } from 'discord.js'
 import {
   AudioPlayer,
   AudioPlayerStatus,
@@ -12,6 +12,8 @@ import signale from 'signale'
 import play from 'play-dl'
 import * as usetube from 'usetube'
 
+import { client } from '../../client'
+
 import { CachedPlayQueue } from './play.helpers'
 
 type BotVideoState = {
@@ -19,7 +21,7 @@ type BotVideoState = {
   hasMountedErrorEvents: boolean
   audioPlayer?: AudioPlayer
   subscription?: PlayerSubscription
-  lastMessage?: Message
+  lastInteraction?: CommandInteraction
 }
 
 export const videosQueue = new CachedPlayQueue()
@@ -34,8 +36,8 @@ function handlePlaying() {
 }
 
 function handlePause() {
-  if (botVideoState.lastMessage) {
-    botVideoState.lastMessage.reply('Video is paused, dawg')
+  if (botVideoState.lastInteraction?.isCommand()) {
+    botVideoState.lastInteraction.reply('Video is paused, dawg')
   }
 }
 
@@ -102,26 +104,40 @@ function setupConnectionEvents(connection: VoiceConnection) {
 }
 
 async function createVideoPlayingConnection(
-  message: Message,
+  interaction: CommandInteraction,
   videoUrl: string,
 ) {
   if (botVideoState.isPlaying) {
     videosQueue.push(videoUrl)
-    return message.reply('Video added to the queue')
+    return interaction.reply('Video added to the queue')
   }
 
-  if (!message.guildId || !message.member?.voice.channelId) {
-    return message.reply('You need to be in a voice channel to play music')
+  if (!interaction.guildId || !interaction.user.client.voice) {
+    return interaction.reply('You need to be in a voice channel to play music')
   }
 
-  if (!message.guild?.voiceAdapterCreator) {
-    return message.reply("I can't play music without a voice adapter")
+  if (!interaction.guild?.voiceAdapterCreator) {
+    return interaction.reply("I can't play music without a voice adapter")
+  }
+
+  const guild = client.guilds.cache.get(interaction.guildId)
+
+  if (!guild) {
+    return interaction.reply("I can't find this guild lul")
+  }
+
+  const member = guild.members.cache.get(interaction.user.id)
+
+  if (!member?.voice?.channelId) {
+    return interaction.reply(
+      'Member is not in a voice channel, I guess (or something, idk man)',
+    )
   }
 
   const connection = joinVoiceChannel({
-    channelId: message.member.voice.channelId,
-    guildId: message.guildId,
-    adapterCreator: message.guild.voiceAdapterCreator,
+    channelId: member.voice.channelId,
+    guildId: interaction.guildId,
+    adapterCreator: interaction.guild.voiceAdapterCreator,
   })
 
   setupConnectionEvents(connection)
@@ -132,7 +148,10 @@ async function createVideoPlayingConnection(
   await playVideo(videoUrl)
 }
 
-async function searchYouTubeUrl(message: Message, input: string) {
+async function searchYouTubeUrl(
+  interaction: CommandInteraction,
+  input: string,
+) {
   const { videos } = await usetube.searchVideo(input)
   const filter: AwaitMessagesOptions = {
     max: 1,
@@ -144,9 +163,13 @@ async function searchYouTubeUrl(message: Message, input: string) {
     .map((video, videoIndex) => `**[${videoIndex + 1}]**: ${video.title}`)
     .join('\n')
 
-  await message.reply(videosMessages)
+  if (!interaction.channel) {
+    return
+  }
 
-  const collected = await message.channel.awaitMessages(filter)
+  await interaction.reply(videosMessages)
+
+  const collected = await interaction.channel.awaitMessages(filter)
   const video = collected.first()
 
   if (video) {
@@ -156,38 +179,35 @@ async function searchYouTubeUrl(message: Message, input: string) {
     if (selectedVideo) {
       return `https://www.youtube.com/watch?v=${selectedVideo.id}`
     }
-
-    return undefined
   }
 }
 
-export async function playEventHandler(
-  message: Message,
-  videoUrlOrSearch: string,
-  ...searchRest: string[]
-) {
-  botVideoState.lastMessage = message
+export async function playEventHandler(interaction: CommandInteraction) {
+  botVideoState.lastInteraction = interaction
 
-  if (!videoUrlOrSearch) {
-    message.reply('You need to provide a video url')
-    return
+  const videoUrl = interaction.options.getString('url')
+
+  if (videoUrl) {
+    const youtubeUrlMatch = /youtube\.com/g
+    const isYouTubeUrl = youtubeUrlMatch.test(videoUrl)
+
+    if (isYouTubeUrl) {
+      return await createVideoPlayingConnection(interaction, videoUrl)
+    }
   }
 
-  const youtubeUrlMatch = /youtube\.com/g
-  const isYoutubeUrl = youtubeUrlMatch.test(videoUrlOrSearch)
+  const search = interaction.options.getString('search') ?? ''
+  const isEmptyInput = !videoUrl && !search
 
-  if (isYoutubeUrl) {
-    await createVideoPlayingConnection(message, videoUrlOrSearch)
-    return
+  if (isEmptyInput) {
+    return interaction.reply('You need to provide a video url or search query')
   }
 
-  const searchTerms = [videoUrlOrSearch, ...searchRest].join(' ')
-  const searchedUrl = await searchYouTubeUrl(message, searchTerms)
+  const searchedUrl = await searchYouTubeUrl(interaction, search)
 
   if (searchedUrl) {
-    await createVideoPlayingConnection(message, searchedUrl)
-    return
+    return await createVideoPlayingConnection(interaction, searchedUrl)
   }
 
-  await message.reply('Invalid video url, homie')
+  return interaction.reply('Invalid video url, homie')
 }

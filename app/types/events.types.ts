@@ -1,5 +1,5 @@
-import type { Message } from 'discord.js'
+import type { CommandInteraction } from 'discord.js'
 
 export type EventMap = {
-  [key: string]: (message: Message, ...commandArgs: string[]) => Promise<void>
+  [key: string]: (interaction: CommandInteraction) => Promise<any>
 }

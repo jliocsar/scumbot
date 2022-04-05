@@ -1,14 +1,14 @@
 import 'dotenv-safe/config'
 import express from 'express'
 
-import { setupClient } from './client'
+import { registerApplicationCommands } from './register-application-commands'
 import { setupClientEvents } from './events'
-import { registerGlobalCommands } from './register-global-commands'
+import { setupClient } from './client'
 
 async function startDiscordBot() {
   const client = await setupClient()
   await setupClientEvents(client)
-  await registerGlobalCommands()
+  await registerApplicationCommands()
 }
 
 ;(async function startServer() {

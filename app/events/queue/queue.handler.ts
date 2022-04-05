@@ -1,7 +1,7 @@
-import type { Message } from 'discord.js'
+import type { CommandInteraction } from 'discord.js'
 
 import { videosQueue } from '../play'
 
-export async function queueEventHandler(message: Message) {
-  await message.reply(JSON.stringify(videosQueue))
+export async function queueEventHandler(interaction: CommandInteraction) {
+  return interaction.reply(JSON.stringify(videosQueue))
 }

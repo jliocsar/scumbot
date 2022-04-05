@@ -1,5 +1,3 @@
-export const COMMAND_PREFIX = '/'
-
 export enum Command {
   Help = 'help',
   Play = 'play',

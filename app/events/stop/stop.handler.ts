@@ -1,4 +1,4 @@
-import type { Message } from 'discord.js'
+import type { CommandInteraction } from 'discord.js'
 
 import { botVideoState, videosQueue } from '../play'
 import { botRadioState } from '../radio'
@@ -20,14 +20,16 @@ function stopRadio() {
   }
 }
 
-export async function stopEventHandler(message: Message) {
+export async function stopEventHandler(interaction: CommandInteraction) {
   if (botVideoState.isPlaying) {
-    return stopVideo()
+    stopVideo()
+    return interaction.reply('👌🏻')
   }
 
   if (botRadioState.isPlaying) {
-    return stopRadio()
+    stopRadio()
+    return interaction.reply('👌🏻')
   }
 
-  await message.reply('No video or radio is currently playing')
+  return interaction.reply('No video or radio is currently playing')
 }

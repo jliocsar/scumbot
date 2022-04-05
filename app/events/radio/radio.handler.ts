@@ -1,4 +1,4 @@
-import type { Message } from 'discord.js'
+import type { CommandInteraction } from 'discord.js'
 import {
   AudioPlayer,
   createAudioPlayer,
@@ -10,12 +10,16 @@ import {
   VoiceConnection,
 } from '@discordjs/voice'
 
+import { client } from '../../client'
+
+import { botVideoState } from '../play'
+
 type BotRadioState = {
   isPlaying: boolean
   hasMountedErrorEvents: boolean
   audioPlayer?: AudioPlayer
   subscription?: PlayerSubscription
-  lastMessage?: Message
+  lastInteraction?: CommandInteraction
 }
 
 export const botRadioState: BotRadioState = {
@@ -49,15 +53,29 @@ function setupConnectionEvents(connection: VoiceConnection) {
 }
 
 async function createStreamPlayingConnection(
-  message: Message,
+  interaction: CommandInteraction,
   streamUrl: string,
 ) {
-  if (!message.guildId || !message.member?.voice.channelId) {
-    return message.reply('You need to be in a voice channel to play music')
+  if (!interaction.guildId || !interaction.user.client.voice) {
+    return interaction.reply('You need to be in a voice channel to play music')
   }
 
-  if (!message.guild?.voiceAdapterCreator) {
-    return message.reply("I can't play music without a voice adapter")
+  if (!interaction.guild?.voiceAdapterCreator) {
+    return interaction.reply("I can't play music without a voice adapter")
+  }
+
+  const guild = client.guilds.cache.get(interaction.guildId)
+
+  if (!guild) {
+    return interaction.reply("I can't find this guild lul")
+  }
+
+  const member = guild.members.cache.get(interaction.user.id)
+
+  if (!member?.voice?.channelId) {
+    return interaction.reply(
+      'Member is not in a voice channel, I guess (or something, idk man)',
+    )
   }
 
   if (!botRadioState.audioPlayer) {
@@ -69,9 +87,9 @@ async function createStreamPlayingConnection(
   }
 
   const connection = joinVoiceChannel({
-    channelId: message.member.voice.channelId,
-    guildId: message.guildId,
-    adapterCreator: message.guild.voiceAdapterCreator,
+    channelId: member.voice.channelId,
+    guildId: interaction.guildId,
+    adapterCreator: interaction.guild.voiceAdapterCreator,
   })
 
   setupConnectionEvents(connection)
@@ -81,15 +99,25 @@ async function createStreamPlayingConnection(
   await playStream(streamUrl)
 }
 
-export async function radioEventHandler(message: Message, streamUrl: string) {
-  botRadioState.lastMessage = message
-  botRadioState.isPlaying = true
+export async function radioEventHandler(interaction: CommandInteraction) {
+  const streamingUrl = interaction.options.getString('url')
 
-  const isValidUrl = /^http?s:\/\//.test(streamUrl)
-
-  if (isValidUrl) {
-    return await createStreamPlayingConnection(message, streamUrl)
+  if (!streamingUrl) {
+    return interaction.reply('You need to provide a video url')
   }
 
-  return message.reply('Not a valid URL, homie')
+  if (botVideoState.isPlaying) {
+    return interaction.reply('There is a video playing already')
+  }
+
+  botRadioState.lastInteraction = interaction
+  botRadioState.isPlaying = true
+
+  const isValidUrl = /^http?s:\/\//.test(streamingUrl)
+
+  if (isValidUrl) {
+    return await createStreamPlayingConnection(interaction, streamingUrl)
+  }
+
+  return interaction.reply('Not a valid URL, homie')
 }

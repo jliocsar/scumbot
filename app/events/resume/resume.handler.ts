@@ -1,18 +1,13 @@
-import type { Message } from 'discord.js'
+import type { CommandInteraction } from 'discord.js'
 
 import { botVideoState } from '../play'
 
-export async function resumeEventHandler(message: Message) {
-  if (botVideoState.isPlaying) {
-    message.reply('The video is already playing')
-    return
-  }
-
-  if (botVideoState.subscription?.player) {
+export async function resumeEventHandler(interaction: CommandInteraction) {
+  if (botVideoState.isPlaying && botVideoState.subscription?.player) {
     botVideoState.isPlaying = true
     botVideoState.subscription.player.unpause()
-    return
+    return interaction.reply('👌🏻')
   }
 
-  message.reply('There is no video playing')
+  return interaction.reply('There is no video playing')
 }
