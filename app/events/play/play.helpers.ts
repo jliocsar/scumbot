@@ -1,9 +1,9 @@
-import { StoreKey } from '../../constants/store.constants'
-import { store } from '../../store'
+import { StoreKey } from '~/constants/store.constants'
+import { store } from '~/store'
 
 export class CachedPlayQueue {
   public get queue() {
-    return store.get<string[]>(StoreKey.PlayQueue) as string[]
+    return store.get(StoreKey.PlayQueue) as string[]
   }
 
   public push(videoUrl: string) {

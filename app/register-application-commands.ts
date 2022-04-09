@@ -1,36 +1,35 @@
-import signale from 'signale'
-import { REST } from '@discordjs/rest'
+import type { OAuth2Guild } from 'discord.js'
 import { Routes } from 'discord-api-types/v9'
+import signale from 'signale'
 
-import {
-  APPLICATION_ID,
-  DISCORD_TOKEN,
-} from './constants/environment.constants'
-import { client } from './client'
+import { APPLICATION_ID, CUSTOM_GUILD } from './constants/environment.constants'
+import { client } from './client/discord'
+import { rest } from './client/rest'
 import { commands } from './commands'
+
+export const GUILDS_FROM_GURIS = [CUSTOM_GUILD, 'AUXILIADORA FUNDOS']
+
+const filterGuild = (guild: OAuth2Guild) =>
+  GUILDS_FROM_GURIS.includes(guild.name)
+
+const registerApplicationCommand = async (guild: OAuth2Guild) => {
+  try {
+    await rest.put(Routes.applicationGuildCommands(APPLICATION_ID, guild.id), {
+      body: commands,
+    })
+    signale.success('Registered commands for guild:', guild.name)
+  } catch (error) {
+    signale.error('Failed to register commands in', guild.name)
+  }
+}
 
 export async function registerApplicationCommands() {
   try {
-    const rest = new REST({ version: '9' }).setToken(DISCORD_TOKEN)
     const guilds = await client.guilds.fetch()
-
     await Promise.all(
-      guilds.map(async guild => {
-        try {
-          await rest.put(
-            Routes.applicationGuildCommands(APPLICATION_ID, guild.id),
-            {
-              body: commands,
-            },
-          )
-          signale.success('Registered commands for guild:', guild.name)
-        } catch (error) {
-          console.log({ error })
-          signale.error('Failed to register commands in', guild.name)
-        }
-      }),
+      guilds.filter(filterGuild).map(registerApplicationCommand),
     )
   } catch (error) {
-    console.error(error)
+    signale.error('Something went wrong on fetching the guilds:', error)
   }
 }

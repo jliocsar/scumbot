@@ -3,7 +3,8 @@ import express from 'express'
 
 import { registerApplicationCommands } from './register-application-commands'
 import { setupClientEvents } from './events'
-import { setupClient } from './client'
+import { setupClient } from './setup-discord-client'
+import { PORT } from './constants/environment.constants'
 
 async function startDiscordBot() {
   const client = await setupClient()
@@ -20,9 +21,7 @@ async function startDiscordBot() {
     response.send('Hello from 🥓')
   })
 
-  const port = process.env.PORT || 3000
-
-  app.listen(port, () => {
-    console.log(`Listening on port ${port}`)
+  app.listen(PORT, () => {
+    console.log(`Listening on port ${PORT}`)
   })
 })()

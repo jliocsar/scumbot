@@ -10,7 +10,9 @@
     "esModuleInterop": true,
     "moduleResolution": "node",
     "baseUrl": ".",
-    "paths": {}
+    "paths": {
+      "~/*": ["app/*"]
+    }
   },
   "include": ["app/**/*.ts"],
   "exclude": ["node_modules"]

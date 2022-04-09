@@ -12,7 +12,7 @@ import signale from 'signale'
 import play from 'play-dl'
 import * as usetube from 'usetube'
 
-import { client } from '../../client'
+import { client } from '~/client/discord'
 
 import { CachedPlayQueue } from './play.helpers'
 
