@@ -19,7 +19,6 @@ type BotRadioState = {
   hasMountedErrorEvents: boolean
   audioPlayer?: AudioPlayer
   subscription?: PlayerSubscription
-  lastInteraction?: CommandInteraction
 }
 
 export const botRadioState: BotRadioState = {
@@ -110,7 +109,6 @@ export async function radioEventHandler(interaction: CommandInteraction) {
     return interaction.reply('There is a video playing already')
   }
 
-  botRadioState.lastInteraction = interaction
   botRadioState.isPlaying = true
 
   const isValidUrl = /^http?s:\/\//.test(streamingUrl)

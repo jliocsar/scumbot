@@ -21,7 +21,6 @@ type BotVideoState = {
   hasMountedErrorEvents: boolean
   audioPlayer?: AudioPlayer
   subscription?: PlayerSubscription
-  lastInteraction?: CommandInteraction
 }
 
 export const videosQueue = new CachedPlayQueue()
@@ -35,17 +34,11 @@ function handlePlaying() {
   botVideoState.isPlaying = true
 }
 
-function handlePause() {
-  if (botVideoState.lastInteraction?.isCommand()) {
-    botVideoState.lastInteraction.reply('Video is paused, dawg')
-  }
-}
-
-function handleIdle() {
+async function handleIdle() {
   botVideoState.isPlaying = false
   if (!videosQueue.isEmpty()) {
     const videoUrl = videosQueue.unshift()
-    playVideo(videoUrl)
+    await playVideo(videoUrl)
   }
 }
 
@@ -73,16 +66,11 @@ export async function playVideo(videoUrl: string) {
 
     if (resource && botVideoState.subscription) {
       botVideoState.audioPlayer.play(resource)
-
       botVideoState.subscription.player.on(
         AudioPlayerStatus.Playing,
         handlePlaying,
       )
       botVideoState.subscription.player.on(AudioPlayerStatus.Idle, handleIdle)
-      botVideoState.subscription.player.on(
-        AudioPlayerStatus.Paused,
-        handlePause,
-      )
     }
   }
 }
@@ -103,35 +91,25 @@ function setupConnectionEvents(connection: VoiceConnection) {
   process.on('exit', handleDisconnect)
 }
 
-async function createVideoPlayingConnection(
+async function createVideoAudioVoiceConnection(
   interaction: CommandInteraction,
   videoUrl: string,
+  videoName = videoUrl,
 ) {
   if (botVideoState.isPlaying) {
     videosQueue.push(videoUrl)
-    return interaction.reply('Video added to the queue')
+    return interaction.followUp(`Video added to the queue 📭\n${videoName}`)
   }
 
-  if (!interaction.guildId || !interaction.user.client.voice) {
-    return interaction.reply('You need to be in a voice channel to play music')
-  }
-
-  if (!interaction.guild?.voiceAdapterCreator) {
-    return interaction.reply("I can't play music without a voice adapter")
+  if (!interaction.guildId || !interaction.guild?.voiceAdapterCreator) {
+    return interaction.followUp('You are not in a voice channel or something')
   }
 
   const guild = client.guilds.cache.get(interaction.guildId)
-
-  if (!guild) {
-    return interaction.reply("I can't find this guild lul")
-  }
-
-  const member = guild.members.cache.get(interaction.user.id)
+  const member = guild?.members.cache.get(interaction.user.id)
 
   if (!member?.voice?.channelId) {
-    return interaction.reply(
-      'Member is not in a voice channel, I guess (or something, idk man)',
-    )
+    return interaction.followUp('You are not in a voice channel')
   }
 
   const connection = joinVoiceChannel({
@@ -146,6 +124,8 @@ async function createVideoPlayingConnection(
   botVideoState.subscription = connection.subscribe(botVideoState.audioPlayer)
 
   await playVideo(videoUrl)
+
+  return interaction.followUp(`Now playing this stuff:\n${videoUrl}`)
 }
 
 async function searchYouTubeUrl(
@@ -159,7 +139,7 @@ async function searchYouTubeUrl(
     errors: ['time'],
   }
 
-  const videosMessages = videos
+  const fetchedVideosMessageBody = videos
     .map((video, videoIndex) => `**[${videoIndex + 1}]**: ${video.title}`)
     .join('\n')
 
@@ -167,8 +147,9 @@ async function searchYouTubeUrl(
     return
   }
 
-  await interaction.reply(videosMessages)
-
+  const sentVideosMessage = await interaction.channel.send(
+    fetchedVideosMessageBody,
+  )
   const collected = await interaction.channel.awaitMessages(filter)
   const video = collected.first()
 
@@ -177,37 +158,41 @@ async function searchYouTubeUrl(
     const selectedVideo = videos[videoIndex]
 
     if (selectedVideo) {
+      await sentVideosMessage.delete()
       return `https://www.youtube.com/watch?v=${selectedVideo.id}`
     }
   }
 }
 
 export async function playEventHandler(interaction: CommandInteraction) {
-  botVideoState.lastInteraction = interaction
-
+  await interaction.deferReply()
   const videoUrl = interaction.options.getString('url')
 
   if (videoUrl) {
-    const youtubeUrlMatch = /youtube\.com/g
+    const youtubeUrlMatch = /^http?s:\/\//g
     const isYouTubeUrl = youtubeUrlMatch.test(videoUrl)
 
     if (isYouTubeUrl) {
-      return await createVideoPlayingConnection(interaction, videoUrl)
+      return createVideoAudioVoiceConnection(interaction, videoUrl)
     }
+
+    return interaction.followUp('Not a valid YouTube URL, dawg')
   }
 
   const search = interaction.options.getString('search') ?? ''
   const isEmptyInput = !videoUrl && !search
 
   if (isEmptyInput) {
-    return interaction.reply('You need to provide a video url or search query')
+    return interaction.followUp(
+      'You need to provide a video url or search query',
+    )
   }
 
   const searchedUrl = await searchYouTubeUrl(interaction, search)
 
   if (searchedUrl) {
-    return await createVideoPlayingConnection(interaction, searchedUrl)
+    return createVideoAudioVoiceConnection(interaction, searchedUrl, search)
   }
 
-  return interaction.reply('Invalid video url, homie')
+  return interaction.followUp('Invalid video url, homie')
 }
