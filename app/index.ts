@@ -1,4 +1,4 @@
-import 'dotenv-safe/config'
+import 'dotenv/config'
 import express from 'express'
 
 import { registerApplicationCommands } from './register-application-commands'
