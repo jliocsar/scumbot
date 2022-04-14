@@ -1,0 +1,16 @@
+version: 0.2
+phases:
+  pre_build:
+    on-failure: ABORT
+    commands:
+      - aws ecr get-login-password --region us-east-2 | docker login --username AWS --password-stdin 976825681067.dkr.ecr.us-east-2.amazonaws.com
+  build:
+    on-failure: ABORT
+    commands:
+      - docker build -t scumbot:latest --build-arg DISCORD_TOKEN=${DISCORD_TOKEN} --build-arg APPLICATION_ID=${APPLICATION_ID} --build-arg CLIENT_SECRET=${CLIENT_SECRET} .
+      - docker tag scumbot:latest 976825681067.dkr.ecr.us-east-2.amazonaws.com/scumbot:latest
+  post_build:
+    on-failure: ABORT
+    commands:
+      - docker push 976825681067.dkr.ecr.us-east-2.amazonaws.com/scumbot:latest
+      - aws ecs update-service --cluster scumbot-cluster --service scumbot-service --force-new-deployment

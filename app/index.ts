@@ -21,6 +21,12 @@ async function startDiscordBot() {
     response.send('Hello from 🥓')
   })
 
+  app.get('/healthcheck', (request, response) => {
+    response.status(200).json({
+      ok: true,
+    })
+  })
+
   app.listen(PORT, () => {
     console.log(`Listening on port ${PORT}`)
   })
