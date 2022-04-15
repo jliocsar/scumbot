@@ -114,7 +114,8 @@ export async function radioEventHandler(interaction: CommandInteraction) {
   const isValidUrl = /^http?s:\/\//.test(streamingUrl)
 
   if (isValidUrl) {
-    return await createStreamPlayingConnection(interaction, streamingUrl)
+    await createStreamPlayingConnection(interaction, streamingUrl)
+    return interaction.reply('👌🏻')
   }
 
   return interaction.reply('Not a valid URL, homie')
