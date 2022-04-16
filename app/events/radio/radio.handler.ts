@@ -56,23 +56,25 @@ async function createStreamPlayingConnection(
   streamUrl: string,
 ) {
   if (!interaction.guildId || !interaction.user.client.voice) {
-    return interaction.reply('You need to be in a voice channel to play music')
+    return interaction.followUp(
+      'You need to be in a voice channel to play music',
+    )
   }
 
   if (!interaction.guild?.voiceAdapterCreator) {
-    return interaction.reply("I can't play music without a voice adapter")
+    return interaction.followUp("I can't play music without a voice adapter")
   }
 
   const guild = client.guilds.cache.get(interaction.guildId)
 
   if (!guild) {
-    return interaction.reply("I can't find this guild lul")
+    return interaction.followUp("I can't find this guild lul")
   }
 
   const member = guild.members.cache.get(interaction.user.id)
 
   if (!member?.voice?.channelId) {
-    return interaction.reply(
+    return interaction.followUp(
       'Member is not in a voice channel, I guess (or something, idk man)',
     )
   }
@@ -99,14 +101,16 @@ async function createStreamPlayingConnection(
 }
 
 export async function radioEventHandler(interaction: CommandInteraction) {
+  await interaction.deferReply()
+
   const streamingUrl = interaction.options.getString('url')
 
   if (!streamingUrl) {
-    return interaction.reply('You need to provide a video url')
+    return interaction.followUp('You need to provide a video url')
   }
 
   if (botVideoState.isPlaying) {
-    return interaction.reply('There is a video playing already')
+    return interaction.followUp('There is a video playing already')
   }
 
   botRadioState.isPlaying = true
@@ -115,8 +119,8 @@ export async function radioEventHandler(interaction: CommandInteraction) {
 
   if (isValidUrl) {
     await createStreamPlayingConnection(interaction, streamingUrl)
-    return interaction.reply('👌🏻')
+    return interaction.followUp('👌🏻')
   }
 
-  return interaction.reply('Not a valid URL, homie')
+  return interaction.followUp('Not a valid URL, homie')
 }
