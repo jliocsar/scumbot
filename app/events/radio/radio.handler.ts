@@ -98,6 +98,7 @@ async function createStreamPlayingConnection(
   botRadioState.subscription = connection.subscribe(botRadioState.audioPlayer)
 
   await playStream(streamUrl)
+  return interaction.followUp('👌🏻')
 }
 
 export async function radioEventHandler(interaction: CommandInteraction) {
@@ -118,8 +119,7 @@ export async function radioEventHandler(interaction: CommandInteraction) {
   const isValidUrl = /^http?s:\/\//.test(streamingUrl)
 
   if (isValidUrl) {
-    await createStreamPlayingConnection(interaction, streamingUrl)
-    return interaction.followUp('👌🏻')
+    return createStreamPlayingConnection(interaction, streamingUrl)
   }
 
   return interaction.followUp('Not a valid URL, homie')
