@@ -1,4 +1,5 @@
 import signale from 'signale'
+import * as Sentry from '@sentry/node'
 
 import { client } from './client/discord'
 import { DISCORD_TOKEN } from './constants/environment.constants'
@@ -9,6 +10,10 @@ function handleReady() {
 
 function handleError(error: Error) {
   signale.error('Client error:', error)
+  Sentry.withScope(scope => {
+    scope.setExtra('emitter', 'client')
+    Sentry.captureException(error)
+  })
 }
 
 function handleWarning(warning: string) {

@@ -7,7 +7,7 @@ phases:
   build:
     on-failure: ABORT
     commands:
-      - docker build -t scumbot:latest --build-arg DISCORD_TOKEN=${DISCORD_TOKEN} --build-arg APPLICATION_ID=${APPLICATION_ID} --build-arg CLIENT_SECRET=${CLIENT_SECRET} .
+      - docker build -t scumbot:latest --build-arg DISCORD_TOKEN=${DISCORD_TOKEN} --build-arg APPLICATION_ID=${APPLICATION_ID} --build-arg SENTRY_DSN=${SENTRY_DSN} .
       - docker tag scumbot:latest 976825681067.dkr.ecr.us-east-2.amazonaws.com/scumbot:latest
   post_build:
     on-failure: ABORT

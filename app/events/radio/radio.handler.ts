@@ -9,6 +9,7 @@ import {
   StreamType,
   VoiceConnection,
 } from '@discordjs/voice'
+import * as Sentry from '@sentry/node'
 
 import { client } from '~/client/discord'
 
@@ -37,12 +38,16 @@ async function playStream(streamUrl: string) {
 }
 
 function setupConnectionEvents(connection: VoiceConnection) {
-  const handleStreamPlayingStop = () => {
+  const handleStreamPlayingStop = (error: Error) => {
     botRadioState.isPlaying = false
+    Sentry.withScope(scope => {
+      scope.setExtra('emitter', 'connection/process')
+      Sentry.captureException(error)
+    })
   }
 
-  const handleDisconnect = () => {
-    handleStreamPlayingStop()
+  const handleDisconnect = (error: Error) => {
+    handleStreamPlayingStop(error)
     connection.destroy()
   }
 

@@ -11,6 +11,7 @@ import {
 import signale from 'signale'
 import play from 'play-dl'
 import * as usetube from 'usetube'
+import * as Sentry from '@sentry/node'
 
 import { client } from '~/client/discord'
 
@@ -49,6 +50,10 @@ function handleAudioPlayerError(error: Error) {
     prefix: 'Audio player error error',
     message,
   })
+  Sentry.withScope(scope => {
+    scope.setExtra('emitter', 'audioPlayer')
+    Sentry.captureException(error)
+  })
 }
 
 export async function playVideo(videoUrl: string) {
@@ -76,13 +81,17 @@ export async function playVideo(videoUrl: string) {
 }
 
 function setupConnectionEvents(connection: VoiceConnection) {
-  const handleVideoQueueClear = () => {
+  const handleVideoQueueClear = (error: Error) => {
     botVideoState.isPlaying = false
     videosQueue.clear()
+    Sentry.withScope(scope => {
+      scope.setExtra('emitter', 'connection/process')
+      Sentry.captureException(error)
+    })
   }
 
-  const handleDisconnect = () => {
-    handleVideoQueueClear()
+  const handleDisconnect = (error: Error) => {
+    handleVideoQueueClear(error)
     connection.destroy()
   }
 
