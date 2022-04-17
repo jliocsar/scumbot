@@ -20,7 +20,7 @@
     "usetube": "^2.1.4"
   },
   "scripts": {
-    "dev": "nodemon --exec ts-node app/index.ts",
+    "dev": "nodemon --exec node --experimental-loader esbuild-node-loader app/index.ts",
     "start": "node --experimental-loader esbuild-node-loader app/index.ts",
     "build": "echo 'Built with bacon 🍖'"
   },
