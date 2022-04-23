@@ -1,3 +1,3 @@
 export * from './play.handler'
-export * from './play.helpers'
 export * from './play.command'
+export * from './play.service'

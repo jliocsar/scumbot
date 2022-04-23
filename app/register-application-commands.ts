@@ -3,8 +3,8 @@ import { Routes } from 'discord-api-types/v9'
 import signale from 'signale'
 
 import { APPLICATION_ID, CUSTOM_GUILD } from './constants/environment.constants'
-import { client } from './client/discord'
-import { rest } from './client/rest'
+import { client } from './clients/bot/bot.client'
+import { rest } from './clients/rest/rest.client'
 import { commands } from './commands'
 
 export const GUILDS_FROM_GURIS = [CUSTOM_GUILD, 'AUXILIADORA FUNDOS']

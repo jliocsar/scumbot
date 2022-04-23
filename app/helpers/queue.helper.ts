@@ -2,17 +2,17 @@ import { StoreKey } from '~/constants/store.constants'
 import { store } from '~/store'
 
 export class CachedPlayQueue {
-  public get queue() {
+  get queue() {
     return store.get(StoreKey.PlayQueue) as string[]
   }
 
-  public push(videoUrl: string) {
+  push(videoUrl: string) {
     const queue = this.queue
     store.set(StoreKey.PlayQueue, [...queue, videoUrl])
     return queue
   }
 
-  public unshift() {
+  unshift() {
     if (this.isEmpty()) {
       throw new Error('The queue is empty')
     }
@@ -22,11 +22,11 @@ export class CachedPlayQueue {
     return videoUrl
   }
 
-  public isEmpty() {
+  isEmpty() {
     return !this.queue.length
   }
 
-  public clear() {
+  clear() {
     store.set(StoreKey.PlayQueue, [])
   }
 }

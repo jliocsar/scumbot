@@ -1,6 +1,6 @@
 import type { Integration } from '@sentry/types'
 import 'dotenv/config'
-import express, { Application, NextFunction } from 'express'
+import express, { Application } from 'express'
 import * as Sentry from '@sentry/node'
 import * as Tracing from '@sentry/tracing'
 

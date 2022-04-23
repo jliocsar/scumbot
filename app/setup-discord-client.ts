@@ -1,7 +1,7 @@
 import signale from 'signale'
 import * as Sentry from '@sentry/node'
 
-import { client } from './client/discord'
+import { client } from './clients/bot/bot.client'
 import { DISCORD_TOKEN } from './constants/environment.constants'
 
 function handleReady() {
