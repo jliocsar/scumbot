@@ -6,10 +6,7 @@ import { botRadioState } from '../radio'
 function stopVideo() {
   botVideoState.isPlaying = false
   videosQueue.clear()
-
-  if (botVideoState.subscription?.connection) {
-    botVideoState.subscription.connection.disconnect()
-  }
+  botVideoState.subscription?.connection.disconnect()
 }
 
 function stopRadio() {

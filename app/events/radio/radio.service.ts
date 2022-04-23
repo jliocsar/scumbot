@@ -17,13 +17,15 @@ import { client } from '~/clients/bot/bot.client'
 export type BotRadioState = {
   isPlaying: boolean
   hasMountedErrorEvents: boolean
-  audioPlayer?: AudioPlayer
+  audioPlayer?: AudioPlayer | null
   subscription?: PlayerSubscription | null
 }
 
 export const botRadioState: BotRadioState = {
   isPlaying: false,
   hasMountedErrorEvents: false,
+  audioPlayer: null,
+  subscription: null,
 }
 
 export async function playStream(streamUrl: string) {
@@ -34,24 +36,23 @@ export async function playStream(streamUrl: string) {
   botRadioState.audioPlayer?.play(resource)
 }
 
+export function handleStreamPlayingStop(error?: Error) {
+  botRadioState.isPlaying = false
+
+  if (error) {
+    Sentry.withScope(scope => {
+      scope.setExtra('emitter', 'connection/process')
+      Sentry.captureException(error)
+    })
+  }
+}
+
+export function handleDisconnect(error?: Error) {
+  handleStreamPlayingStop(error)
+  botRadioState.subscription?.connection.destroy()
+}
+
 export function setupConnectionEvents(connection: VoiceConnection) {
-  const handleStreamPlayingStop = (error?: Error) => {
-    botRadioState.isPlaying = false
-    botRadioState.subscription = null
-
-    if (error) {
-      Sentry.withScope(scope => {
-        scope.setExtra('emitter', 'connection/process')
-        Sentry.captureException(error)
-      })
-    }
-  }
-
-  const handleDisconnect = (error?: Error) => {
-    handleStreamPlayingStop(error)
-    connection.destroy()
-  }
-
   connection.on('error', handleDisconnect)
   connection.on(VoiceConnectionStatus.Disconnected, () => {
     handleDisconnect()

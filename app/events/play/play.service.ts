@@ -5,6 +5,7 @@ import {
   createAudioPlayer,
   createAudioResource,
   joinVoiceChannel,
+  PlayerSubscription,
   VoiceConnection,
   VoiceConnectionStatus,
 } from '@discordjs/voice'
@@ -20,6 +21,7 @@ export type BotVideoState = {
   isPlaying: boolean
   hasMountedErrorEvents: boolean
   audioPlayer?: AudioPlayer | null
+  subscription?: PlayerSubscription | null
 }
 
 export const videosQueue = new CachedPlayQueue()
@@ -27,6 +29,8 @@ export const videosQueue = new CachedPlayQueue()
 export const botVideoState: BotVideoState = {
   isPlaying: false,
   hasMountedErrorEvents: false,
+  audioPlayer: null,
+  subscription: null,
 }
 
 export function handlePlaying() {
@@ -42,12 +46,11 @@ export async function handleIdle() {
 }
 
 export function handleAudioPlayerError(error: Error) {
-  const { message } = error
-
   signale.error({
     prefix: 'Audio player error',
-    message,
+    message: error.message,
   })
+
   Sentry.withScope(scope => {
     scope.setExtra('emitter', 'audioPlayer')
     Sentry.captureException(error)
@@ -87,18 +90,18 @@ export function handleVideoQueueClear(error?: Error) {
   }
 }
 
-export function handleDisconnect(connection: VoiceConnection, error?: Error) {
+export function handleDisconnect(error?: Error) {
   handleVideoQueueClear(error)
-  connection.destroy()
+  botVideoState.subscription?.connection.destroy()
 }
 
 export function setupConnectionEvents(connection: VoiceConnection) {
   connection.on('error', handleVideoQueueClear)
   connection.on(VoiceConnectionStatus.Disconnected, () => {
-    handleDisconnect(connection)
+    handleDisconnect()
   })
   connection.on(VoiceConnectionStatus.Destroyed, () => {
-    handleDisconnect(connection)
+    handleDisconnect()
   })
 }
 
@@ -132,6 +135,7 @@ export async function createVideoAudioVoiceConnection(
   setupConnectionEvents(connection)
 
   botVideoState.audioPlayer ??= createAudioPlayer()
+  botVideoState.subscription = connection.subscribe(botVideoState.audioPlayer)
 
   await playVideo(videoUrl)
 

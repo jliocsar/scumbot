@@ -3,9 +3,9 @@ import type { CommandInteraction } from 'discord.js'
 import { botVideoState } from '../play'
 
 export async function resumeEventHandler(interaction: CommandInteraction) {
-  if (!botVideoState.isPlaying && botVideoState.subscription?.player) {
+  if (!botVideoState.isPlaying && botVideoState.audioPlayer) {
     botVideoState.isPlaying = true
-    botVideoState.subscription.player.unpause()
+    botVideoState.audioPlayer.unpause()
     return interaction.reply('👌🏻')
   }
 
