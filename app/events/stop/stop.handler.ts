@@ -4,17 +4,14 @@ import { botVideoState, videosQueue } from '../play'
 import { botRadioState } from '../radio'
 
 function stopVideo() {
-  botVideoState.isPlaying = false
   videosQueue.clear()
+  botVideoState.isPlaying = false
   botVideoState.subscription?.connection.disconnect()
 }
 
 function stopRadio() {
   botRadioState.isPlaying = false
-
-  if (botRadioState.subscription?.connection) {
-    botRadioState.subscription.connection.disconnect()
-  }
+  botRadioState.subscription?.connection.disconnect()
 }
 
 export async function stopEventHandler(interaction: CommandInteraction) {

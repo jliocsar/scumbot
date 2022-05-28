@@ -16,6 +16,7 @@ import * as Sentry from '@sentry/node'
 
 import { client } from '~/clients/bot/bot.client'
 import { CachedPlayQueue } from '~/helpers/queue.helper'
+import { BOT_CONNECTION_TIMEOUT } from '~/constants/time.constants'
 
 export type BotVideoState = {
   isPlaying: boolean
@@ -25,23 +26,43 @@ export type BotVideoState = {
 }
 
 export const videosQueue = new CachedPlayQueue()
-
 export const botVideoState: BotVideoState = {
   isPlaying: false,
   hasMountedErrorEvents: false,
   audioPlayer: null,
   subscription: null,
 }
+let botTimeout: NodeJS.Timeout | null = null
 
 export function handlePlaying() {
   botVideoState.isPlaying = true
+
+  if (botTimeout) {
+    clearTimeout(botTimeout)
+  }
 }
 
-export async function handleIdle() {
+export async function handleIdle(): Promise<void> {
   botVideoState.isPlaying = false
-  if (!videosQueue.isEmpty()) {
-    const videoUrl = videosQueue.unshift()
+
+  if (videosQueue.isEmpty()) {
+    botTimeout = setTimeout(() => {
+      if (!botVideoState.isPlaying) {
+        console.log('timing out')
+        botVideoState.subscription?.connection.disconnect()
+      }
+    }, BOT_CONNECTION_TIMEOUT)
+    return
+  }
+
+  const videoUrl = videosQueue.unshift()
+
+  try {
     await playVideo(videoUrl)
+  } catch (error) {
+    signale.error('Failed to play video:', error)
+    Sentry.captureException(error)
+    return handleIdle()
   }
 }
 
@@ -50,7 +71,6 @@ export function handleAudioPlayerError(error: Error) {
     prefix: 'Audio player error',
     message: error.message,
   })
-
   Sentry.withScope(scope => {
     scope.setExtra('emitter', 'audioPlayer')
     Sentry.captureException(error)
@@ -59,7 +79,6 @@ export function handleAudioPlayerError(error: Error) {
 
 export async function playVideo(videoUrl: string) {
   const { stream, type: inputType } = await play.stream(videoUrl)
-
   const resource = createAudioResource(stream, {
     inputType,
   })
@@ -78,29 +97,26 @@ export async function playVideo(videoUrl: string) {
   }
 }
 
-export function handleVideoQueueClear(error?: Error) {
-  botVideoState.isPlaying = false
+export function handleVideoQueueClear() {
   videosQueue.clear()
+  botVideoState.isPlaying = false
+  botVideoState.subscription?.connection.destroy()
+}
 
+export function handleDisconnect(error?: Error) {
   if (error) {
     Sentry.withScope(scope => {
       scope.setExtra('emitter', 'connection/process')
       Sentry.captureException(error)
     })
   }
-}
 
-export function handleDisconnect(error?: Error) {
-  handleVideoQueueClear(error)
-  botVideoState.subscription?.connection.destroy()
+  handleVideoQueueClear()
 }
 
 export function setupConnectionEvents(connection: VoiceConnection) {
   connection.on('error', handleVideoQueueClear)
   connection.on(VoiceConnectionStatus.Disconnected, () => {
-    handleDisconnect()
-  })
-  connection.on(VoiceConnectionStatus.Destroyed, () => {
     handleDisconnect()
   })
 }
@@ -126,6 +142,10 @@ export async function createVideoAudioVoiceConnection(
     return interaction.followUp('You are not in a voice channel')
   }
 
+  if (botVideoState.subscription?.connection) {
+    botVideoState.subscription.connection.disconnect()
+  }
+
   const connection = joinVoiceChannel({
     channelId: member.voice.channelId,
     guildId: interaction.guildId,
@@ -137,7 +157,19 @@ export async function createVideoAudioVoiceConnection(
   botVideoState.audioPlayer ??= createAudioPlayer()
   botVideoState.subscription = connection.subscribe(botVideoState.audioPlayer)
 
-  await playVideo(videoUrl)
+  try {
+    await playVideo(videoUrl)
+  } catch (error: any) {
+    signale.error({
+      prefix: 'Video play error',
+      message: error.message,
+    })
+    Sentry.withScope(scope => {
+      scope.setExtra('emitter', 'playVideo')
+      Sentry.captureException(error)
+    })
+    return interaction.followUp('Something went wrong')
+  }
 
   return interaction.followUp(`Now playing this stuff:\n${videoUrl}`)
 }

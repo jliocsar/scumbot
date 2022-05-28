@@ -7,7 +7,11 @@ import { client } from './clients/bot/bot.client'
 import { rest } from './clients/rest/rest.client'
 import { commands } from './commands'
 
-export const GUILDS_FROM_GURIS = [CUSTOM_GUILD, 'AUXILIADORA FUNDOS']
+export const GUILDS_FROM_GURIS = [
+  CUSTOM_GUILD,
+  '🏡 AUXILIADORA FUNDOS 🌅',
+  'game + makonha',
+]
 
 const filterGuild = (guild: OAuth2Guild) =>
   GUILDS_FROM_GURIS.includes(guild.name)
