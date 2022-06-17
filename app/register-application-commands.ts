@@ -11,6 +11,7 @@ export const GUILDS_FROM_GURIS = [
   CUSTOM_GUILD,
   '🏡 AUXILIADORA FUNDOS 🌅',
   'game + makonha',
+  'PROERD Galático',
 ]
 
 const filterGuild = (guild: OAuth2Guild) =>
