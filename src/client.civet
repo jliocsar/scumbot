@@ -1,0 +1,5 @@
+{ Client, GatewayIntentBits } from discord.js
+
+export client := new Client {
+  intents: [GatewayIntentBits.Guilds]
+}

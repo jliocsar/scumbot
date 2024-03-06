@@ -1,0 +1,5 @@
+{ CommandRouter } from ./router.civet
+{ client } from ./client.civet
+
+router := new CommandRouter
+{ commands, applicationCommands } := await router.loadCommands()
