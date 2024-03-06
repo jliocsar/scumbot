@@ -1,0 +1,3 @@
+{ LimitedQueue } from ./helpers/queue.civet
+
+export queue := new LimitedQueue 10

@@ -1,0 +1,67 @@
+{ type GuildMember, type Guild, SlashCommandBuilder } from discord.js
+{ createAudioResource, getVoiceConnection, joinVoiceChannel, VoiceConnectionStatus } from @discordjs/voice
+playdl from play-dl
+type { CommandHandler } from ../types.civet
+{ audioPlayer } from ../audio-player.civet
+
+export command := new SlashCommandBuilder()
+  .setName 'play'
+  .setDescription 'Plays a YouTube song'
+  .addStringOption (option) ->
+    option.setName 'search'
+      .setDescription 'The search or URL of the song to play'
+      .setRequired true
+  .addIntegerOption (option) ->
+    option.setName 'time'
+      .setDescription 'The `t` time to start the song at'
+      .setRequired false
+
+HIGHEST_VIDEO_QUALITY := 2
+
+function getVideoInfo(search: string, time: number | null)
+  url .= search
+  isUrl := /^(https:\/\/)?youtu\.?be/.test url
+  unless isUrl
+    [video] := await playdl.search search, { limit: 1 }
+    url = video.url
+  urlInstance := new URL url
+  seek := Number(urlInstance.searchParams.get 't') || time
+  info := await playdl.video_info url
+  { info, seek, url }
+
+function joinGuildMemberVoiceChannel(member: GuildMember | null, guild: Guild | null)
+  unless member or guild
+    throw new Error 'Member or guild is missing'
+  currentConnection := getVoiceConnection guild!.id
+  if currentConnection
+    if currentConnection.joinConfig.channelId !== member!.voice.channelId
+      currentConnection.destroy()
+    else
+      return
+  if voiceChannel := member!.voice.channel
+    return joinVoiceChannel {
+      channelId: voiceChannel.id
+      guildId: voiceChannel.guild.id
+      adapterCreator: voiceChannel.guild.voiceAdapterCreator
+    }
+  throw new Error 'You need to be in a voice channel to play music'
+
+export default play: CommandHandler := (interaction) ->
+  search .= interaction.options.getString 'search'
+  unless search
+    return interaction.reply { content: 'You need to provide a search or URL to play', +ephemeral }
+  await interaction.deferReply()
+  time := interaction.options.getInteger 'time'
+  { info, seek, url } := await getVideoInfo search, time
+  [guild, member] := [interaction.guild, interaction.member]
+  // source := await playdl.stream_from_info info, {
+  //   ...(seek && { seek }),
+  //   quality: HIGHEST_VIDEO_QUALITY,
+  // }
+  // resource := createAudioResource source.stream, {
+  //   inputType: source.type
+  // }
+  if connection := joinGuildMemberVoiceChannel member as GuildMember, guild
+    connection.on VoiceConnectionStatus.Ready, -> connection.subscribe audioPlayer
+  console.log url
+  return interaction.followUp 'WIP'

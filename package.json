@@ -3,16 +3,18 @@
   "module": "index.ts",
   "type": "module",
   "scripts": {
-    "dev": "bun run --bun --watch src/index.civet"
+    "dev": "civet src/index.civet"
   },
   "devDependencies": {
-    "@danielx/civet": "^0.6.83",
-    "@types/bun": "latest"
+    "@danielx/civet": "~0.6.83"
   },
   "peerDependencies": {
-    "typescript": "^5.0.0"
+    "typescript": "~5.0.0"
   },
   "dependencies": {
-    "discord.js": "^14.14.1"
+    "@discordjs/voice": "^0.16.1",
+    "discord.js": "~14.14.1",
+    "dotenv": "^16.4.5",
+    "play-dl": "^1.9.7"
   }
 }

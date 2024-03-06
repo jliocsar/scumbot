@@ -1,20 +1,26 @@
-{ FileSystemRouter } from bun
+* as fs from node:fs/promises
+* as path from node:path
 { type SlashCommandBuilder, Collection } from discord.js
 type { CommandHandler } from ./types.civet
 
-export class CommandRouter < FileSystemRouter
-  @()
-    super {
-      dir: 'src/commands'
-      style: 'nextjs'
-      fileExtensions: ['.civet']
-    }
+export class CommandRouter
+  private routes: Record<string, string> = {}
+
+  private loadRoutes()
+    commandsPath := 'src/commands'
+    files := await fs.readdir commandsPath
+    for file of files
+      unless @isInternalFile file
+        name := file.replace '.civet', ''
+        filePath := path.join 'commands', file
+        @routes[name] = filePath
 
   loadCommands()
+    await @loadRoutes()
     applicationCommands: SlashCommandBuilder[] := []
-    commands := new Collection
+    commands := new Collection<string, CommandHandler>
     commandsRoutes := Object.entries @routes
-    for [name, filePath] of commandsRoutes
+    for [fileName, filePath] of commandsRoutes
       if @isInternalFile filePath
         continue
       module := await import filePath
@@ -22,12 +28,12 @@ export class CommandRouter < FileSystemRouter
       unless handler
         console.warn `No default export found in ${filePath}`
         continue
+      name := fileName.replace '/', ''
       commands.set name, handler
-      command := module.command
-      if command
+      if command := module.command
         applicationCommands.push command
       else
-        console.warn `No command found in ${filePath}`
+        console.warn `No command found in ${filePath}, this command will not be registered`
     { commands, applicationCommands }
 
   private isInternalFile(filePath: string)

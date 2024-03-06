@@ -1,0 +1,4 @@
+{ env } from node:process
+
+export TOKEN := env.TOKEN!
+export CLIENT_ID := env.CLIENT_ID!

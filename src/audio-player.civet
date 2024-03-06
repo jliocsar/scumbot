@@ -1,0 +1,3 @@
+{ createAudioPlayer } from @discordjs/voice
+
+export audioPlayer := createAudioPlayer()

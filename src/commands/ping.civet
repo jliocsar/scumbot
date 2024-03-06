@@ -2,8 +2,8 @@
 type { CommandHandler } from ../types.civet
 
 export command := new SlashCommandBuilder()
-  .setName('ping')
-  .setDescription('Replies with Pong!')
+  .setName 'ping'
+  .setDescription 'Replies with Pong!'
 
 export default ping: CommandHandler := (interaction) ->
-  interaction.reply({ content: 'Pong!', ephemeral: true })
+  interaction.reply { content: 'Pong!', ephemeral: true }

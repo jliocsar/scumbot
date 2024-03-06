@@ -1,0 +1,23 @@
+{ Success, Failure } from ./response.civet
+
+export class LimitedQueue<T>
+  private readonly queue: T[] = []
+
+  @(readonly limit: number)
+
+  get size()
+    @queue.length
+
+  get isFull()
+    @queue.length >= @limit
+
+  add(item: T)
+    if @isFull
+      return Failure('Queue is full')
+    @queue.push(item)
+    Success(item)
+
+  remove()
+    if @size < 1
+      return Failure('Queue is empty')
+    Success @queue.shift()
