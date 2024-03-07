@@ -1,17 +1,37 @@
-{ createAudioPlayer, AudioPlayerStatus } from @discordjs/voice
+{ createAudioPlayer, AudioPlayerStatus, getVoiceConnection } from @discordjs/voice
 { playAudioResource } from ./helpers/audio-resource.civet
-{ audioMachineActor } from ./machines/audio.civet
+{ voiceMachineActor } from ./machines/voice.civet
+{ client } from ./client.civet
+
+// 10 seconds
+TIMEOUT_DURATION_MS := 10_000
 
 export audioPlayer := createAudioPlayer()
 
-audioPlayer.on AudioPlayerStatus.Idle, (oldState, newState) ->
-  if 'resource' in oldState
-    console.log oldState.resource.metadata
-    resource := oldState.resource
-    snapshot := audioMachineActor.getSnapshot()
-    { resources } := snapshot.context
-    guildId := resources.get resource
-    console.log guildId
-  // if { data } := queue.next()
-  //   playAudioResource data!.video_details.url
-  // else
+audioPlayer.on AudioPlayerStatus.Idle, (oldState) ->
+  return unless 'resource' in oldState
+  resource := oldState.resource
+  { context: { resources, queues, timeouts } } := voiceMachineActor.getSnapshot()
+  guildId := resources.get resource
+  return unless guildId
+  voiceMachineActor.send { type: 'voice.idling', guildId }
+  queue := queues.get guildId
+  return unless queue
+  { data: next } := queue.next()
+  if timeouts.has guildId
+    clearTimeout timeouts.get guildId
+  unless next
+    return timeouts.set
+      guildId,
+      setTimeout ->
+        guildId |> getVoiceConnection |> ?.destroy()
+        voiceMachineActor.send { type: 'voice.destroy', guildId }
+      , TIMEOUT_DURATION_MS
+  { data: embed } := await playAudioResource guildId, next.info
+  channel := client.channels.cache.get next.channelId
+  if channel?.isTextBased()
+    channel.send {
+      content: '🎧 Changing to'
+      embeds: [embed]
+    }
+  console.log embed

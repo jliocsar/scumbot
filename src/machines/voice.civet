@@ -1,0 +1,69 @@
+type { InfoData } from play-dl
+type { AudioResource } from @discordjs/voice
+{ createMachine, assign, createActor } from xstate
+{ Collection } from discord.js
+{ LimitedQueue } from ../helpers/queue.civet
+
+type GuildId = string
+
+voiceMachine := createMachine {
+  context: {
+    resources: new Collection<AudioResource, GuildId>()
+    queues: new Collection<GuildId, LimitedQueue<{ channelId: string; info: InfoData }>>()
+    timeouts: new Collection<GuildId, NodeJS.Timeout>()
+    state: new Collection<GuildId, 'joined' | 'idle' | 'playing'>()
+  },
+  on: {
+    'queue.add': {
+      description: 'Add a resource to the queue'
+      actions: assign {
+        queues: ({ context, event }) => {
+          queue := context.queues.get event.guildId
+          if queue
+            queue.add { event.info, event.channelId }
+            context.queues.set event.guildId, queue
+          return context.queues
+        }
+      }
+    }
+    'voice.join': {
+      description: 'Join a voice channel'
+      actions: assign {
+        queues: ({ context, event }) => context.queues.set event.guildId, new LimitedQueue 10
+        state: ({ context, event }) => context.state.set event.guildId, 'joined'
+      }
+    }
+    'voice.play': {
+      description: 'Play an audio resource'
+      actions: assign {
+        resources: ({ context, event }) => context.resources.set event.resource, event.guildId
+        state: ({ context, event }) => context.state.set event.guildId, 'playing'
+      }
+    }
+    'voice.idling': {
+      description: 'Set the voice connection to idle'
+      actions: assign {
+        state: ({ context, event }) => context.state.set event.guildId, 'idle'
+      }
+    }
+    'voice.destroy': {
+      description: 'Destroy the voice connection'
+      actions: assign {
+        resources: ({ context, event }) =>
+          context.resources.delete event.resource
+          return context.resources
+        queues: ({ context, event }) =>
+          context.queues.delete event.guildId
+          return context.queues
+        timeouts: ({ context, event }) =>
+          guildId := event.guildId
+          if context.timeouts.has guildId
+            clearTimeout context.timeouts.get guildId
+            context.timeouts.delete guildId
+          return context.timeouts
+      }
+    }
+  }
+}
+
+export voiceMachineActor := createActor(voiceMachine).start()

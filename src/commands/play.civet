@@ -1,19 +1,13 @@
 {
   type GuildMember
-  type Guild
   SlashCommandBuilder
   EmbedBuilder
 } from discord.js
-{
-  getVoiceConnection
-  joinVoiceChannel
-  VoiceConnectionStatus
-} from @discordjs/voice
+{ VoiceConnectionStatus } from @discordjs/voice
 playdl from play-dl
 type { CommandHandler } from ../types.civet
 { audioPlayer } from ../audio-player.civet
-{ playAudioResource } from ../helpers/audio-resource.civet
-{ audioMachineActor } from ../machines/audio.civet
+{ playAudioResource, joinGuildMemberVoiceChannel, queueSong } from ../helpers/audio-resource.civet
 
 export command := new SlashCommandBuilder()
   .setName 'play'
@@ -36,25 +30,7 @@ function getVideoInfo(search: string, time: number | null)
   urlInstance := new URL url
   seek := Number(urlInstance.searchParams.get 't') || time
   info := await playdl.video_info url
-  { info, seek, url }
-
-function joinGuildMemberVoiceChannel(member: GuildMember | null, guild: Guild | null)
-  unless member or guild
-    throw new Error 'Member or guild is missing'
-  currentConnection := getVoiceConnection guild!.id
-  if currentConnection
-    if currentConnection.joinConfig.channelId !== member!.voice.channelId
-      currentConnection.destroy()
-    else
-      return
-  if voiceChannel := member!.voice.channel
-    guildId := voiceChannel.guild.id
-    audioMachineActor.send { type: 'room.join', guildId }
-    return joinVoiceChannel {
-      guildId
-      channelId: voiceChannel.id
-      adapterCreator: voiceChannel.guild.voiceAdapterCreator
-    }
+  { info, seek }
 
 export default play: CommandHandler := (interaction) ->
   search .= interaction.options.getString 'search'
@@ -63,26 +39,22 @@ export default play: CommandHandler := (interaction) ->
     return interaction.reply { content: 'You need to provide a search or URL to play', +ephemeral }
   try
     await interaction.reply '🔍 Searching for the song...'
-    { info, seek, url } := await getVideoInfo search, time
+    { info, seek } := await getVideoInfo search, time
     [guild, member] := [interaction.guild, interaction.member]
-    connection := joinGuildMemberVoiceChannel member as GuildMember, guild
-    unless connection
-      return interaction.editReply 'You need to be in a voice channel to play music'
-    if subscription := connection.subscribe audioPlayer
-      connection.on VoiceConnectionStatus.Ready, -> playAudioResource guild!.id, url, seek
-    videoReplyEmbed := new EmbedBuilder()
-      .setColor(0x080808)
-      .setURL url
-    videoDetails := info.video_details
-    if videoDetails.title
-      videoReplyEmbed.setTitle videoDetails.title!
-    if videoDetails.description
-      videoReplyEmbed.setDescription videoDetails.description!
-    if videoDetails.thumbnails.length > 0
-      videoReplyEmbed.setThumbnail videoDetails.thumbnails.0.url
-    interaction.editReply {
-      content: '🎧 Now playing'
-      embeds: [videoReplyEmbed]
-    }
+    guildId := guild!.id
+    { data: connection, error } := joinGuildMemberVoiceChannel member as GuildMember, guild
+    if error
+      errorMessage .= error
+      if error is 'Currently playing a song'
+        queueSong guildId, interaction.channelId, info
+        errorMessage += ' -- The song has been added to the queue'
+      return interaction.editReply errorMessage
+    if subscription := connection!.subscribe audioPlayer
+      connection!.on VoiceConnectionStatus.Ready, ->
+        { data: embed } := await playAudioResource guildId, info, seek
+        interaction.editReply {
+          content: '🎧 Now playing'
+          embeds: [embed]
+        }
   catch (error)
     interaction.editReply content: (error as Error).message

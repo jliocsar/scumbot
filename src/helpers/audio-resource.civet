@@ -1,9 +1,12 @@
-playdl from play-dl
-{ createAudioResource } from @discordjs/voice
+{ type GuildMember, type Guild, EmbedBuilder } from discord.js
+playdl, { type InfoData } from play-dl
+{ createAudioResource, getVoiceConnection, joinVoiceChannel } from @discordjs/voice
 { audioPlayer } from ../audio-player.civet
-{ audioMachineActor } from ../machines/audio.civet
+{ voiceMachineActor } from ../machines/voice.civet
+{ Failure, Success } from ./response.civet
 
-export function playAudioResource(guildId: string, url: string, seek?: number | null)
+export function playAudioResource(guildId: string, info: InfoData, seek?: number | null)
+  url := info.video_details.url
   source := await playdl.stream url, {
     ...(seek && { seek })
     // TODO: Try to increase this
@@ -15,4 +18,44 @@ export function playAudioResource(guildId: string, url: string, seek?: number | 
   }
   ||> .volume?.setVolume 0.5
   audioPlayer.play resource
-  audioMachineActor.send { type: 'voice.play', guildId, resource }
+  voiceMachineActor.send { type: 'voice.play', guildId, resource }
+  videoReplyEmbed := new EmbedBuilder()
+    .setColor 0x080808
+    .setURL url
+  videoDetails := info.video_details
+  if videoDetails.title
+    videoReplyEmbed.setTitle videoDetails.title!
+  if videoDetails.description
+    videoReplyEmbed.setDescription videoDetails.description!
+  if videoDetails.thumbnails.length > 0
+    videoReplyEmbed.setThumbnail videoDetails.thumbnails.0.url
+  return Success videoReplyEmbed
+
+export function queueSong(guildId: string, channelId: string, info: InfoData)
+  voiceMachineActor.send { type: 'queue.add', guildId, channelId, info }
+
+export function joinGuildMemberVoiceChannel(member: GuildMember | null, guild: Guild | null)
+  unless member or guild
+    return Failure 'Member or guild is missing'
+  guildId := guild!.id
+  currentConnection := getVoiceConnection guildId
+  if currentConnection
+    if currentConnection.joinConfig.channelId !== member!.voice.channelId
+      currentConnection.destroy()
+    else
+      { context: { state, queues } } := voiceMachineActor.getSnapshot()
+      isPlaying := (state.get guildId) is 'playing'
+      if isPlaying
+        queue := queues.get guildId
+        if queue?.isFull
+          return Failure 'Queue is full'
+        return Failure 'Currently playing a song'
+  if voiceChannel := member!.voice.channel
+    guildId := voiceChannel.guild.id
+    voiceMachineActor.send { type: 'voice.join', guildId }
+    return Success joinVoiceChannel {
+      guildId
+      channelId: voiceChannel.id
+      adapterCreator: voiceChannel.guild.voiceAdapterCreator
+    }
+  return Failure 'Member is not in a voice channel'

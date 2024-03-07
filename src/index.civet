@@ -23,10 +23,10 @@ client
     return unless interaction.isChatInputCommand()
     if command := commands.get interaction.commandName
       await command interaction
-      unless interaction.replied or interaction.deferred
-        await interaction.reply { content: 'Command failed', +ephemeral }
     else
       await interaction.reply { content: 'Unknown command', +ephemeral }
     return
+
+client.on Events.Error, (error) -> console.error error
 
 await client.login TOKEN
