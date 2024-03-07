@@ -13,6 +13,7 @@ playdl from play-dl
 type { CommandHandler } from ../types.civet
 { audioPlayer } from ../audio-player.civet
 { playAudioResource } from ../helpers/audio-resource.civet
+{ audioMachineActor } from ../machines/audio.civet
 
 export command := new SlashCommandBuilder()
   .setName 'play'
@@ -47,9 +48,11 @@ function joinGuildMemberVoiceChannel(member: GuildMember | null, guild: Guild | 
     else
       return
   if voiceChannel := member!.voice.channel
+    guildId := voiceChannel.guild.id
+    audioMachineActor.send { type: 'room.join', guildId }
     return joinVoiceChannel {
+      guildId
       channelId: voiceChannel.id
-      guildId: voiceChannel.guild.id
       adapterCreator: voiceChannel.guild.voiceAdapterCreator
     }
 
@@ -66,7 +69,7 @@ export default play: CommandHandler := (interaction) ->
     unless connection
       return interaction.editReply 'You need to be in a voice channel to play music'
     if subscription := connection.subscribe audioPlayer
-      connection.on VoiceConnectionStatus.Ready, -> playAudioResource url, seek
+      connection.on VoiceConnectionStatus.Ready, -> playAudioResource guild!.id, url, seek
     videoReplyEmbed := new EmbedBuilder()
       .setColor(0x080808)
       .setURL url

@@ -1,0 +1,44 @@
+type { AudioResource } from @discordjs/voice
+{ createMachine, assign, createActor } from xstate
+{ Collection } from discord.js
+{ LimitedQueue } from ../helpers/queue.civet
+
+type GuildId = string
+
+audioMachine := createMachine {
+  context: {
+    resources: new Collection<AudioResource, GuildId>()
+    queues: new Collection<GuildId, LimitedQueue<string>>()
+  },
+  on: {
+    'voice.join': {
+      description: 'Join a voice channel'
+      actions: assign {
+        queues: ({ context, event }) => context.queues.set event.guildId, new LimitedQueue 10
+      }
+    }
+    'voice.play': {
+      description: 'Play an audio resource'
+      actions: assign {
+        resources: ({ context, event }) => context.resources.set event.resource, event.guildId
+      },
+    }
+    // INC: {
+    //   actions: assign({
+    //     count: ({ context }) => context.count + 1,
+    //   }),
+    // },
+    // DEC: {
+    //   actions: assign({
+    //     count: ({ context }) => context.count - 1,
+    //   }),
+    // },
+    // SET: {
+    //   actions: assign({
+    //     count: ({ event }) => event.value,
+    //   }),
+    // },
+  },
+}
+
+export audioMachineActor := createActor(audioMachine).start()

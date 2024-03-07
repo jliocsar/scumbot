@@ -1,8 +1,9 @@
 playdl from play-dl
 { createAudioResource } from @discordjs/voice
 { audioPlayer } from ../audio-player.civet
+{ audioMachineActor } from ../machines/audio.civet
 
-export function playAudioResource(url: string, seek?: number | null)
+export function playAudioResource(guildId: string, url: string, seek?: number | null)
   source := await playdl.stream url, {
     ...(seek && { seek })
     // TODO: Try to increase this
@@ -14,3 +15,4 @@ export function playAudioResource(url: string, seek?: number | null)
   }
   ||> .volume?.setVolume 0.5
   audioPlayer.play resource
+  audioMachineActor.send { type: 'voice.play', guildId, resource }
