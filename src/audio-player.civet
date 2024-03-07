@@ -1,6 +1,6 @@
 { createAudioPlayer, AudioPlayerStatus } from @discordjs/voice
-// { queue } from ./state.civet
 { playAudioResource } from ./helpers/audio-resource.civet
+{ audioMachineActor } from ./machines/audio.civet
 
 export audioPlayer := createAudioPlayer()
 
@@ -8,7 +8,10 @@ audioPlayer.on AudioPlayerStatus.Idle, (oldState, newState) ->
   if 'resource' in oldState
     console.log oldState.resource.metadata
     resource := oldState.resource
-    guildId := 
+    snapshot := audioMachineActor.getSnapshot()
+    { resources } := snapshot.context
+    guildId := resources.get resource
+    console.log guildId
   // if { data } := queue.next()
   //   playAudioResource data!.video_details.url
   // else

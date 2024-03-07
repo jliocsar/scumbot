@@ -23,21 +23,6 @@ audioMachine := createMachine {
         resources: ({ context, event }) => context.resources.set event.resource, event.guildId
       },
     }
-    // INC: {
-    //   actions: assign({
-    //     count: ({ context }) => context.count + 1,
-    //   }),
-    // },
-    // DEC: {
-    //   actions: assign({
-    //     count: ({ context }) => context.count - 1,
-    //   }),
-    // },
-    // SET: {
-    //   actions: assign({
-    //     count: ({ event }) => event.value,
-    //   }),
-    // },
   },
 }
 
