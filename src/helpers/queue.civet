@@ -13,11 +13,11 @@ export class LimitedQueue<T>
 
   add(item: T)
     if @isFull
-      return Failure('Queue is full')
-    @queue.push(item)
-    Success(item)
+      return Failure 'Queue is full'
+    @queue.push item
+    Success item
 
-  remove()
+  next()
     if @size < 1
-      return Failure('Queue is empty')
+      return Failure 'Queue is empty'
     Success @queue.shift()

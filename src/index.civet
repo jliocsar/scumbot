@@ -1,5 +1,5 @@
 import dotenv/config
-{ Events } from discord.js
+{ Events, ActivityType } from discord.js
 
 { TOKEN } from ./const.civet
 { CommandRouter } from ./router.civet
@@ -11,17 +11,22 @@ router := new CommandRouter
 
 await registerApplicationCommands applicationCommands
 
-client.on Events.ClientReady, ->
-  console.info "Scumbot is ready"
+client
+  ||> .on Events.ClientReady, ->
+    console.info 'Scumbot is ready'
+    client.user!.setActivity {
+      name: 'your mom sunbathing 😎'
+      type: ActivityType.Watching
+    }
+    return
+  ||> .on Events.InteractionCreate, (interaction) ->
+    return unless interaction.isChatInputCommand()
+    if command := commands.get interaction.commandName
+      await command interaction
+      unless interaction.replied or interaction.deferred
+        await interaction.reply { content: 'Command failed', +ephemeral }
+    else
+      await interaction.reply { content: 'Unknown command', +ephemeral }
+    return
 
-client.on Events.InteractionCreate, (interaction) ->
-  return unless interaction.isChatInputCommand()
-  if command := commands.get interaction.commandName
-    await command interaction
-    unless interaction.replied or interaction.deferred
-      await interaction.reply { content: "Command failed", +ephemeral }
-  else
-    await interaction.reply { content: "Unknown command", +ephemeral }
-  return
-
-client.login TOKEN
+await client.login TOKEN

@@ -5,5 +5,4 @@ export command := new SlashCommandBuilder()
   .setName 'ping'
   .setDescription 'Replies with Pong!'
 
-export default ping: CommandHandler := (interaction) ->
-  interaction.reply { content: 'Pong!', ephemeral: true }
+export default ping: CommandHandler := &.reply { content: 'Pong!', ephemeral: true }

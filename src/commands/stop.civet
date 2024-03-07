@@ -1,0 +1,20 @@
+{ type GuildMember, SlashCommandBuilder } from discord.js
+{ getVoiceConnection } from @discordjs/voice
+type { CommandHandler } from ../types.civet
+{ audioPlayer } from ../audio-player.civet
+
+export command := new SlashCommandBuilder()
+  .setName 'stop'
+  .setDescription 'Stops the song and clears the queue.'
+
+export default stop: CommandHandler := (interaction) ->
+  [guild, member] := [interaction.guild, interaction.member]
+  guildMember := member as GuildMember
+  unless guildMember.voice.channel
+    return interaction.reply 'You need to be in a voice channel to stop the music'
+  currentConnection := getVoiceConnection guild!.id
+  unless currentConnection
+    return interaction.reply 'I am not connected to any voice channel'
+  audioPlayer.stop()
+  currentConnection.destroy()
+  interaction.reply '👌'

@@ -1,0 +1,19 @@
+{ type GuildMember, SlashCommandBuilder } from discord.js
+{ getVoiceConnection } from @discordjs/voice
+type { CommandHandler } from ../types.civet
+{ audioPlayer } from ../audio-player.civet
+
+export command := new SlashCommandBuilder()
+  .setName 'resume'
+  .setDescription 'Resumes the current song'
+
+export default resume: CommandHandler := (interaction) ->
+  [guild, member] := [interaction.guild, interaction.member]
+  guildMember := member as GuildMember
+  unless guildMember.voice.channel
+    return interaction.reply 'You need to be in a voice channel to pause the song'
+  currentConnection := getVoiceConnection guild!.id
+  unless currentConnection
+    return interaction.reply 'I am not connected to any voice channel'
+  unpaused := audioPlayer.unpause()
+  interaction.reply if unpaused then '👌' else 'Nothing to unpause'

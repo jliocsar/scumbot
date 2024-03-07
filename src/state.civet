@@ -1,3 +1,4 @@
+type { InfoData } from play-dl
 { LimitedQueue } from ./helpers/queue.civet
 
-export queue := new LimitedQueue 10
+export queue := new LimitedQueue<InfoData> 10

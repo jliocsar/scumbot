@@ -6,15 +6,19 @@
     "dev": "civet src/index.civet"
   },
   "devDependencies": {
-    "@danielx/civet": "~0.6.83"
+    "@danielx/civet": "~0.6.83",
+    "patch-package": "~8.0.0"
   },
   "peerDependencies": {
     "typescript": "~5.0.0"
   },
   "dependencies": {
-    "@discordjs/voice": "^0.16.1",
+    "@discordjs/opus": "~0.9.0",
+    "@discordjs/voice": "~0.16.1",
     "discord.js": "~14.14.1",
-    "dotenv": "^16.4.5",
-    "play-dl": "^1.9.7"
+    "dotenv": "~16.4.5",
+    "ffmpeg-static": "~5.2.0",
+    "play-dl": "~1.9.7",
+    "tweetnacl": "~1.0.3"
   }
 }

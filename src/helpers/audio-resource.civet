@@ -1,0 +1,16 @@
+playdl from play-dl
+{ createAudioResource } from @discordjs/voice
+{ audioPlayer } from ../audio-player.civet
+
+export function playAudioResource(url: string, seek?: number | null)
+  source := await playdl.stream url, {
+    ...(seek && { seek })
+    // TODO: Try to increase this
+    quality: 0
+    +discordPlayerCompatibility
+  }
+  resource := createAudioResource source.stream, {
+    inputType: source.type
+  }
+  ||> .volume?.setVolume 0.5
+  audioPlayer.play resource
