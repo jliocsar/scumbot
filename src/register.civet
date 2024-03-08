@@ -6,7 +6,7 @@ rest := new REST { version: '10' }
 
 export function registerApplicationCommands(commands: SlashCommandBuilder[])
   try
-    console.info `Registering application (/) commands (${commands.length} total).`
+    console.info `Registering application (/) commands (${commands.#} total).`
     payload := { body: commands.map &.toJSON() }
     console.debug JSON.stringify payload
     await rest.put Routes.applicationCommands(CLIENT_ID), payload

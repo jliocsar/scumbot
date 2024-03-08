@@ -9,7 +9,7 @@ export function buildVideoEmbed(video: YouTubeVideo)
     videoReplyEmbed.setTitle video.title!
   if video.description
     videoReplyEmbed.setDescription video.description!
-  if video.thumbnails.length > 0
+  if video.thumbnails.# > 0
     videoReplyEmbed.setThumbnail video.thumbnails.0.url
   if video.durationInSec
     videoReplyEmbed.addFields {

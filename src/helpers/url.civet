@@ -1,0 +1,8 @@
+{ Failure, Success } from ./response.civet
+
+export function parseURL(url: string)
+  try
+    parsed := new URL url
+    Success parsed
+  catch (error)
+    Failure(error as Error |> .message)

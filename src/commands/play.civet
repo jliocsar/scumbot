@@ -9,6 +9,7 @@ type { CommandHandler } from ../types.civet
 { audioPlayer } from ../audio-player.civet
 { playAudioResource, joinGuildMemberVoiceChannel, queueSong } from ../helpers/audio-resource.civet
 { voiceMachineActor } from ../machines/voice.civet
+{ parseURL } from ../helpers/url.civet
 
 export command := new SlashCommandBuilder()
   .setName 'play'
@@ -27,17 +28,18 @@ function timeoutSearch()
   throw new Error '⏰ The search took too long, try again'
 
 function getVideoInfo(search: string, time: number | null)
-  url .= search
-  isUrl := /^(https:\/\/)?youtu\.?be/.test url
-  unless isUrl
+  url .= parseURL search |> .data?.href
+  unless url
     try
       videosFound := await Promise.race [
         playdl.search search, { limit: 1 }
         timeoutSearch()
       ]
+      unless videosFound?.0
+        return error: '❌ No videos found'
       url = (videosFound as YouTubeVideo[]).0.url
     catch (error)
-      return { error: (error as Error).message }
+      return { error: error as Error |> .message }
   urlInstance := new URL url
   seek := Number(urlInstance.searchParams.get 't') or time
   info := await playdl.video_info url
@@ -78,4 +80,4 @@ export default play: CommandHandler := (interaction) ->
       connection!.on VoiceConnectionStatus.Disconnected, ->
         voiceMachineActor.send { type: 'voice.destroy', guildId }
   catch (error)
-    interaction.followUp content: (error as Error).message
+    interaction.followUp content: error as Error |> .message

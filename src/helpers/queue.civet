@@ -9,13 +9,13 @@ export class LimitedQueue<T>
     @queue
 
   get size
-    @items.length
+    @items.#
 
   get isFull
-    @items.length >= @limit
+    @items.# >= @limit
 
   get isEmpty
-    @items.length < 1
+    @items.# < 1
 
   add(item: T)
     if @isFull
@@ -24,7 +24,7 @@ export class LimitedQueue<T>
     Success item
 
   clear()
-    @items.length = 0
+    @items.# = 0
 
   next()
     if @size < 1

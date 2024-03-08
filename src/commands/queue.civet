@@ -18,4 +18,4 @@ export default queue: CommandHandler := (interaction) ->
     |> .map ({ info: { video_details: videoDetails } }) ->
       hyperlink videoDetails.title!, new URL videoDetails.url
     |> unorderedList
-  interaction.reply [`Total of ${queue.items.length} videos in the queue`, videos].join '\n'
+  interaction.reply [`Total of ${queue.items.#} videos in the queue`, videos].join '\n'
