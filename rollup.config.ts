@@ -1,7 +1,7 @@
 import * as fs from "fs/promises";
 import type { RollupOptions } from "rollup";
 import civetRollupPlugin from "@danielx/civet/rollup";
-import { sentryRollupPlugin } from "@sentry/rollup-plugin";
+// import { sentryRollupPlugin } from "@sentry/rollup-plugin";
 
 const commands = await fs.readdir("src/commands");
 
@@ -10,7 +10,7 @@ export default {
     .map((command) => `src/commands/${command}`)
     .concat("src/index.civet"),
   output: {
-    sourcemap: true,
+    // sourcemap: true,
     dir: "dist",
     preserveModules: true,
     format: "es",
@@ -23,9 +23,9 @@ export default {
     civetRollupPlugin({
       ts: "civet",
     }),
-    sentryRollupPlugin({
-      org: "scumbot",
-      project: "scumbot",
-    }),
+    // sentryRollupPlugin({
+    //   org: "scumbot",
+    //   project: "scumbot",
+    // }),
   ],
 } satisfies RollupOptions;

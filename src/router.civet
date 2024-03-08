@@ -15,7 +15,7 @@ export class CommandRouter
     files := await fs.readdir @commandsPath
     for file of files
       unless @isInternalFile file
-        name := file.replace '.civet', ''
+        name := file.replace /\.civet(\.js)?/, ''
         filePath := path.join 'commands', file
         @routes[name] = filePath
 
