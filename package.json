@@ -1,12 +1,16 @@
 {
-  "name": "scumbotv2",
+  "name": "scumbot",
   "module": "index.ts",
   "type": "module",
   "scripts": {
+    "build": "rollup --config rollup.config.ts --configPlugin typescript",
+    "start": "node dist/index.civet.js",
     "dev": "civet src/index.civet"
   },
   "devDependencies": {
-    "@danielx/civet": "~0.6.83"
+    "@danielx/civet": "~0.6.83",
+    "@rollup/plugin-typescript": "~11.1.6",
+    "rollup": "~4.12.1"
   },
   "peerDependencies": {
     "typescript": "~5.0.0"
@@ -19,6 +23,6 @@
     "ffmpeg-static": "~5.2.0",
     "play-dl": "~1.9.7",
     "tweetnacl": "~1.0.3",
-    "xstate": "^5.9.1"
+    "xstate": "~5.9.1"
   }
 }

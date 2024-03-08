@@ -3,8 +3,6 @@ type { InfoData } from play-dl
 { createMachine, assign, createActor } from xstate
 { Collection } from discord.js
 { LimitedQueue } from ../helpers/queue.civet
-{ playAudioResource } from ../helpers/audio-resource.civet
-{ client } from ../client.civet
 
 type GuildId = string
 
@@ -30,19 +28,6 @@ voiceMachine := createMachine {
             if connection := getVoiceConnection guildId
               connection.destroy()
           return context.queues
-      }
-    }
-    'queue.skip': {
-      description: 'Skip the current resource'
-      actions: assign {
-        queues: ({ context, event }) => {
-          queue := context.queues.get event.guildId
-          if queue
-            { data: next } := queue.next()
-            if next
-              playAudioResource event.guildId, next.info
-          return context.queues
-        }
       }
     }
     'queue.add': {
@@ -89,10 +74,19 @@ voiceMachine := createMachine {
       description: 'Destroy the voice connection'
       actions: assign {
         resources: ({ context, event }) =>
-          context.resources.delete event.resource
+          resource := event.resource
+          if context.resources.has resource
+            context.resources.delete resource
+          else
+            guildId := event.guildId
+            for [resource, id] of context.resources
+              if id is guildId
+                context.resources.delete resource
           return context.resources
         queues: ({ context, event }) =>
-          context.queues.delete event.guildId
+          guildId := event.guildId
+          if context.queues.has guildId
+            context.queues.delete guildId
           return context.queues
         timeouts: ({ context, event }) =>
           guildId := event.guildId

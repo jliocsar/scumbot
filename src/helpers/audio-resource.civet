@@ -1,9 +1,10 @@
-{ type GuildMember, type Guild, EmbedBuilder } from discord.js
+type { GuildMember, Guild } from discord.js
 playdl, { type InfoData } from play-dl
 { createAudioResource, getVoiceConnection, joinVoiceChannel } from @discordjs/voice
 { audioPlayer } from ../audio-player.civet
 { voiceMachineActor } from ../machines/voice.civet
 { Failure, Success } from ./response.civet
+{ buildVideoEmbed } from ./message.civet
 
 export function playAudioResource(guildId: string, info: InfoData, seek?: number | null)
   try
@@ -22,16 +23,7 @@ export function playAudioResource(guildId: string, info: InfoData, seek?: number
   catch (error)
     console.error error
     return Failure 'Failed to play the song'
-  videoReplyEmbed := new EmbedBuilder()
-    .setColor 0x080808
-    .setURL info.video_details.url
-  videoDetails := info.video_details
-  if videoDetails.title
-    videoReplyEmbed.setTitle videoDetails.title!
-  if videoDetails.description
-    videoReplyEmbed.setDescription videoDetails.description!
-  if videoDetails.thumbnails.length > 0
-    videoReplyEmbed.setThumbnail videoDetails.thumbnails.0.url
+  videoReplyEmbed := buildVideoEmbed info.video_details
   return Success videoReplyEmbed
 
 export function queueSong(guildId: string, channelId: string, info: InfoData)

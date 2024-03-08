@@ -5,14 +5,17 @@ export class LimitedQueue<T>
 
   @(readonly limit: number)
 
-  get items()
+  get items
     @queue
 
-  get size()
+  get size
     @items.length
 
-  get isFull()
+  get isFull
     @items.length >= @limit
+
+  get isEmpty
+    @items.length < 1
 
   add(item: T)
     if @isFull

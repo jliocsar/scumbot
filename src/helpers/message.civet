@@ -1,0 +1,32 @@
+type { YouTubeVideo } from play-dl
+{ EmbedBuilder, inlineCode } from discord.js
+
+export function buildVideoEmbed(video: YouTubeVideo)
+  videoReplyEmbed := new EmbedBuilder()
+    .setColor 0x080808
+    .setURL video.url
+  if video.title
+    videoReplyEmbed.setTitle video.title!
+  if video.description
+    videoReplyEmbed.setDescription video.description!
+  if video.thumbnails.length > 0
+    videoReplyEmbed.setThumbnail video.thumbnails.0.url
+  if video.durationInSec
+    videoReplyEmbed.addFields {
+      name: 'Duration'
+      value: inlineCode video.durationInSec + 's'
+      +inline
+    }
+  if video.views
+    videoReplyEmbed.addFields {
+      name: 'Views'
+      value: video.views.toString()
+      +inline
+    }
+  if video.likes
+    videoReplyEmbed.addFields {
+      name: 'Likes'
+      value: video.likes.toString()
+      +inline
+    }
+  return videoReplyEmbed

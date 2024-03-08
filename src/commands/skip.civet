@@ -2,6 +2,7 @@
 { getVoiceConnection } from @discordjs/voice
 type { CommandHandler } from ../types.civet
 { voiceMachineActor } from ../machines/voice.civet
+{ playAudioResource } from ../helpers/audio-resource.civet
 
 export command := new SlashCommandBuilder()
   .setName 'skip'
@@ -16,5 +17,16 @@ export default skip: CommandHandler := (interaction) ->
   currentConnection := getVoiceConnection guildId
   unless currentConnection
     return interaction.reply 'I am not connected to any/your voice channel'
-  voiceMachineActor.send { type: 'queue.skip', guildId }
-  interaction.reply '👌'
+  queue := voiceMachineActor
+    |> .getSnapshot().context
+    |> .queues
+    |> .get guildId
+  unless queue
+    return interaction.reply 'I am not playing any music'
+  if queue.isEmpty
+    return interaction.reply 'There is no song to skip'
+  { data: next } := queue.next()
+  unless next
+    return interaction.reply 'There is no song to skip'
+  await playAudioResource guildId, next.info
+  interaction.reply { content: '👌', +ephemeral }

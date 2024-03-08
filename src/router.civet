@@ -1,14 +1,18 @@
 * as fs from node:fs/promises
 * as path from node:path
+{ fileURLToPath } from node:url
 { type SlashCommandBuilder, Collection } from discord.js
 type { CommandHandler } from ./types.civet
 
+__filename := fileURLToPath import.meta.url
+__dirname := path.dirname __filename
+
 export class CommandRouter
+  private readonly commandsPath = path.join __dirname, 'commands'
   private routes: Record<string, string> = {}
 
   private loadRoutes()
-    commandsPath := 'src/commands'
-    files := await fs.readdir commandsPath
+    files := await fs.readdir @commandsPath
     for file of files
       unless @isInternalFile file
         name := file.replace '.civet', ''
@@ -23,7 +27,8 @@ export class CommandRouter
     for [fileName, filePath] of commandsRoutes
       if @isInternalFile filePath
         continue
-      module := await import filePath
+      absFilePath := path.resolve __dirname, filePath
+      module := await import absFilePath
       handler := module.default as CommandHandler
       unless handler
         console.warn `No default export found in ${filePath}`

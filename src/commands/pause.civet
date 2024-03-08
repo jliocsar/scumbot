@@ -7,7 +7,7 @@ export command := new SlashCommandBuilder()
   .setName 'pause'
   .setDescription 'Pause the current song'
 
-export default stop: CommandHandler := (interaction) ->
+export default pause: CommandHandler := (interaction) ->
   [guild, member] := [interaction.guild, interaction.member]
   guildMember := member as GuildMember
   unless guildMember.voice.channel
@@ -16,4 +16,7 @@ export default stop: CommandHandler := (interaction) ->
   unless currentConnection
     return interaction.reply 'I am not connected to any voice channel'
   paused := audioPlayer.pause()
-  interaction.reply if paused then '👌' else 'Nothing to pause'
+  interaction.reply {
+    content: if paused then '👌' else 'Nothing to pause'
+    +ephemeral
+  }

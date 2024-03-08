@@ -75,5 +75,7 @@ export default play: CommandHandler := (interaction) ->
           |> .context.state
         unless state.has guildId
           searchingMessage.edit '❌ Something went wrong here!'
+      connection!.on VoiceConnectionStatus.Disconnected, ->
+        voiceMachineActor.send { type: 'voice.destroy', guildId }
   catch (error)
     interaction.followUp content: (error as Error).message

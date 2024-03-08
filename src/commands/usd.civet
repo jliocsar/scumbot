@@ -1,0 +1,12 @@
+{ SlashCommandBuilder } from discord.js
+type { CommandHandler } from ../types.civet
+
+export command := new SlashCommandBuilder()
+  .setName 'usd'
+  .setDescription 'Prints the current USD/BRL conversion.'
+
+export default usd: CommandHandler := (interaction) ->
+  result := await fetch 'https://economia.awesomeapi.com.br/last/USD-BRL'
+  data := await result.json()
+  bid := data.USDBRL.bid
+  interaction.reply `R$ ${bid}`

@@ -20,4 +20,4 @@ export default stop: CommandHandler := (interaction) ->
   audioPlayer.stop()
   voiceMachineActor.send { type: 'queue.clear', guildId }
   currentConnection.destroy()
-  interaction.reply '👌'
+  interaction.reply { content: '👌', +ephemeral }
