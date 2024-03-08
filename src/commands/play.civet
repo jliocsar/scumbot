@@ -1,13 +1,14 @@
+{ setTimeout } from node:timers/promises
 {
   type GuildMember
   SlashCommandBuilder
-  EmbedBuilder
 } from discord.js
 { VoiceConnectionStatus } from @discordjs/voice
-playdl from play-dl
+playdl, { type YouTubeVideo } from play-dl
 type { CommandHandler } from ../types.civet
 { audioPlayer } from ../audio-player.civet
 { playAudioResource, joinGuildMemberVoiceChannel, queueSong } from ../helpers/audio-resource.civet
+{ voiceMachineActor } from ../machines/voice.civet
 
 export command := new SlashCommandBuilder()
   .setName 'play'
@@ -21,14 +22,24 @@ export command := new SlashCommandBuilder()
     |> .setDescription 'The `t` time to start the song at'
     |> .setRequired false
 
+function timeoutSearch()
+  await setTimeout 5_000
+  throw new Error '⏰ The search took too long, try again'
+
 function getVideoInfo(search: string, time: number | null)
   url .= search
   isUrl := /^(https:\/\/)?youtu\.?be/.test url
   unless isUrl
-    [video] := await playdl.search search, { limit: 1 }
-    url = video.url
+    try
+      videosFound := await Promise.race [
+        playdl.search search, { limit: 1 }
+        timeoutSearch()
+      ]
+      url = (videosFound as YouTubeVideo[]).0.url
+    catch (error)
+      return { error: (error as Error).message }
   urlInstance := new URL url
-  seek := Number(urlInstance.searchParams.get 't') || time
+  seek := Number(urlInstance.searchParams.get 't') or time
   info := await playdl.video_info url
   { info, seek }
 
@@ -37,24 +48,32 @@ export default play: CommandHandler := (interaction) ->
   time := interaction.options.getInteger 'time'
   unless search
     return interaction.reply { content: 'You need to provide a search or URL to play', +ephemeral }
+  await interaction.deferReply()
   try
-    await interaction.reply '🔍 Searching for the song...'
-    { info, seek } := await getVideoInfo search, time
+    searchingMessage := await interaction.followUp '🔍 Searching for the song...'
+    { info, seek, error } := await getVideoInfo search, time
+    if error then return interaction.followUp error
     [guild, member] := [interaction.guild, interaction.member]
     guildId := guild!.id
-    { data: connection, error } := joinGuildMemberVoiceChannel member as GuildMember, guild
-    if error
-      errorMessage .= error
-      if error is 'Currently playing a song'
-        queueSong guildId, interaction.channelId, info
+    { data: connection, error: joinError } := joinGuildMemberVoiceChannel member as GuildMember, guild
+    if errorMessage .= joinError
+      if joinError is 'Currently playing a song'
+        queueSong guildId, interaction.channelId, info!
         errorMessage += ' -- The song has been added to the queue'
-      return interaction.editReply errorMessage
+      return searchingMessage.edit errorMessage
     if subscription := connection!.subscribe audioPlayer
       connection!.on VoiceConnectionStatus.Ready, ->
-        { data: embed } := await playAudioResource guildId, info, seek
-        interaction.editReply {
+        { data: embed } := await playAudioResource guildId, info!, seek
+        unless embed
+          return searchingMessage.edit '❌ An error occurred while playing the song'
+        searchingMessage.edit {
           content: '🎧 Now playing'
           embeds: [embed]
         }
+      connection!.on VoiceConnectionStatus.Destroyed, ->
+        state := voiceMachineActor.getSnapshot()
+          |> .context.state
+        unless state.has guildId
+          searchingMessage.edit '❌ Something went wrong here!'
   catch (error)
-    interaction.editReply content: (error as Error).message
+    interaction.followUp content: (error as Error).message

@@ -6,22 +6,25 @@ playdl, { type InfoData } from play-dl
 { Failure, Success } from ./response.civet
 
 export function playAudioResource(guildId: string, info: InfoData, seek?: number | null)
-  url := info.video_details.url
-  source := await playdl.stream url, {
-    ...(seek && { seek })
-    // TODO: Try to increase this
-    quality: 0
-    +discordPlayerCompatibility
-  }
-  resource := createAudioResource source.stream, {
-    inputType: source.type
-  }
-  ||> .volume?.setVolume 0.5
-  audioPlayer.play resource
-  voiceMachineActor.send { type: 'voice.play', guildId, resource }
+  try
+    source := await playdl.stream_from_info info, {
+      ...(seek && { seek })
+      // TODO: Try to increase this
+      quality: 0
+      +discordPlayerCompatibility
+    }
+    resource := createAudioResource source.stream, {
+      inputType: source.type
+    }
+    ||> .volume?.setVolume 0.1
+    audioPlayer.play resource
+    voiceMachineActor.send { type: 'voice.play', guildId, resource }
+  catch (error)
+    console.error error
+    return Failure 'Failed to play the song'
   videoReplyEmbed := new EmbedBuilder()
     .setColor 0x080808
-    .setURL url
+    .setURL info.video_details.url
   videoDetails := info.video_details
   if videoDetails.title
     videoReplyEmbed.setTitle videoDetails.title!
@@ -43,13 +46,14 @@ export function joinGuildMemberVoiceChannel(member: GuildMember | null, guild: G
     if currentConnection.joinConfig.channelId !== member!.voice.channelId
       currentConnection.destroy()
     else
-      { context: { state, queues } } := voiceMachineActor.getSnapshot()
+      { state, queues } := voiceMachineActor.getSnapshot().context
       isPlaying := (state.get guildId) is 'playing'
       if isPlaying
         queue := queues.get guildId
         if queue?.isFull
           return Failure 'Queue is full'
         return Failure 'Currently playing a song'
+      return Success currentConnection
   if voiceChannel := member!.voice.channel
     guildId := voiceChannel.guild.id
     voiceMachineActor.send { type: 'voice.join', guildId }

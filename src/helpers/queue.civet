@@ -5,19 +5,25 @@ export class LimitedQueue<T>
 
   @(readonly limit: number)
 
+  get items()
+    @queue
+
   get size()
-    @queue.length
+    @items.length
 
   get isFull()
-    @queue.length >= @limit
+    @items.length >= @limit
 
   add(item: T)
     if @isFull
       return Failure 'Queue is full'
-    @queue.push item
+    @items.push item
     Success item
+
+  clear()
+    @items.length = 0
 
   next()
     if @size < 1
       return Failure 'Queue is empty'
-    Success @queue.shift()
+    Success @items.shift()

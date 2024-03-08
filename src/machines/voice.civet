@@ -1,27 +1,66 @@
 type { InfoData } from play-dl
-type { AudioResource } from @discordjs/voice
+{ type AudioResource, getVoiceConnection } from @discordjs/voice
 { createMachine, assign, createActor } from xstate
 { Collection } from discord.js
 { LimitedQueue } from ../helpers/queue.civet
+{ playAudioResource } from ../helpers/audio-resource.civet
+{ client } from ../client.civet
 
 type GuildId = string
 
+context := {
+  resources: new Collection<AudioResource, GuildId>()
+  queues: new Collection<GuildId, LimitedQueue<{ channelId: string; info: InfoData }>>()
+  timeouts: new Collection<GuildId, NodeJS.Timeout>()
+  state: new Collection<GuildId, 'joined' | 'idle' | 'playing'>()
+} as const
+
 voiceMachine := createMachine {
-  context: {
-    resources: new Collection<AudioResource, GuildId>()
-    queues: new Collection<GuildId, LimitedQueue<{ channelId: string; info: InfoData }>>()
-    timeouts: new Collection<GuildId, NodeJS.Timeout>()
-    state: new Collection<GuildId, 'joined' | 'idle' | 'playing'>()
-  },
+  context
   on: {
+    restart: {
+      actions: assign {
+        context.{resources,timeouts,state}
+        queues: ({ context }) =>
+          for [guildId] of context.queues
+            // for { channelId } of queue.items
+            //   channel := client.channels.cache.get channelId
+            //   if channel?.isTextBased()
+            //     channel.send 'The bot is restarting, please wait a moment'
+            if connection := getVoiceConnection guildId
+              connection.destroy()
+          return context.queues
+      }
+    }
+    'queue.skip': {
+      description: 'Skip the current resource'
+      actions: assign {
+        queues: ({ context, event }) => {
+          queue := context.queues.get event.guildId
+          if queue
+            { data: next } := queue.next()
+            if next
+              playAudioResource event.guildId, next.info
+          return context.queues
+        }
+      }
+    }
     'queue.add': {
       description: 'Add a resource to the queue'
       actions: assign {
         queues: ({ context, event }) => {
           queue := context.queues.get event.guildId
-          if queue
-            queue.add { event.info, event.channelId }
-            context.queues.set event.guildId, queue
+          if queue then queue.add { event.info, event.channelId }
+          return context.queues
+        }
+      }
+    }
+    'queue.clear': {
+      description: 'Clear the queue'
+      actions: assign {
+        queues: ({ context, event }) => {
+          queue := context.queues.get event.guildId
+          if queue then queue.clear()
           return context.queues
         }
       }

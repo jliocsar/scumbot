@@ -6,8 +6,7 @@
     "dev": "civet src/index.civet"
   },
   "devDependencies": {
-    "@danielx/civet": "~0.6.83",
-    "patch-package": "~8.0.0"
+    "@danielx/civet": "~0.6.83"
   },
   "peerDependencies": {
     "typescript": "~5.0.0"
@@ -15,7 +14,7 @@
   "dependencies": {
     "@discordjs/opus": "~0.9.0",
     "@discordjs/voice": "~0.16.1",
-    "discord.js": "~14.14.1",
+    "discord.js": "~14.12.1",
     "dotenv": "~16.4.5",
     "ffmpeg-static": "~5.2.0",
     "play-dl": "~1.9.7",

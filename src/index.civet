@@ -5,6 +5,7 @@ import dotenv/config
 { CommandRouter } from ./router.civet
 { client } from ./client.civet
 { registerApplicationCommands } from ./register.civet
+{ voiceMachineActor } from ./machines/voice.civet
 
 router := new CommandRouter
 { commands, applicationCommands } := await router.loadCommands()
@@ -27,6 +28,8 @@ client
       await interaction.reply { content: 'Unknown command', +ephemeral }
     return
 
-client.on Events.Error, (error) -> console.error error
+client.on Events.Error, (error) ->
+  voiceMachineActor.send type: 'restart'
+  console.error error
 
 await client.login TOKEN

@@ -11,7 +11,7 @@ export audioPlayer := createAudioPlayer()
 audioPlayer.on AudioPlayerStatus.Idle, (oldState) ->
   return unless 'resource' in oldState
   resource := oldState.resource
-  { context: { resources, queues, timeouts } } := voiceMachineActor.getSnapshot()
+  { resources, queues, timeouts } := voiceMachineActor.getSnapshot().context
   guildId := resources.get resource
   return unless guildId
   voiceMachineActor.send { type: 'voice.idling', guildId }
@@ -28,10 +28,11 @@ audioPlayer.on AudioPlayerStatus.Idle, (oldState) ->
         voiceMachineActor.send { type: 'voice.destroy', guildId }
       , TIMEOUT_DURATION_MS
   { data: embed } := await playAudioResource guildId, next.info
+  unless embed
+    return voiceMachineActor.send { type: 'voice.destroy', guildId }
   channel := client.channels.cache.get next.channelId
   if channel?.isTextBased()
     channel.send {
       content: '🎧 Changing to'
       embeds: [embed]
     }
-  console.log embed
