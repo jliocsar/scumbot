@@ -1,15 +1,16 @@
 { type SlashCommandBuilder, REST, Routes } from discord.js
-{ TOKEN, CLIENT_ID } from './const.civet'
+{ TOKEN, CLIENT_ID } from ./const.civet
+{ logger } from ./logger.civet
 
-rest := new REST { version: '10' }
+rest := new REST version: '10'
   .setToken TOKEN
 
 export function registerApplicationCommands(commands: SlashCommandBuilder[])
   try
-    console.info `Registering application (/) commands (${commands.#} total).`
+    logger.info `Registering application (/) commands (${commands.#} total).`
     payload := { body: commands.map &.toJSON() }
-    console.debug JSON.stringify payload
+    logger.debug JSON.stringify payload
     await rest.put Routes.applicationCommands(CLIENT_ID), payload
-    console.info 'Successfully registered application (/) commands.'
+    logger.info 'Successfully registered application (/) commands.'
   catch (error)
-    console.error error
+    logger.error error

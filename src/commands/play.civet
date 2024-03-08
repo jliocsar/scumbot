@@ -1,8 +1,5 @@
 { setTimeout } from node:timers/promises
-{
-  type GuildMember
-  SlashCommandBuilder
-} from discord.js
+{ type GuildMember, SlashCommandBuilder } from discord.js
 { VoiceConnectionStatus } from @discordjs/voice
 playdl, { type YouTubeVideo } from play-dl
 type { CommandHandler } from ../types.civet

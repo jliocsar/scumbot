@@ -2,6 +2,7 @@ type { GuildMember, Guild } from discord.js
 playdl, { type InfoData } from play-dl
 { createAudioResource, getVoiceConnection, joinVoiceChannel } from @discordjs/voice
 { audioPlayer } from ../audio-player.civet
+{ logger } from ../logger.civet
 { voiceMachineActor } from ../machines/voice.civet
 { Failure, Success } from ./response.civet
 { buildVideoEmbed } from ./message.civet
@@ -21,7 +22,7 @@ export function playAudioResource(guildId: string, info: InfoData, seek?: number
     audioPlayer.play resource
     voiceMachineActor.send { type: 'voice.play', guildId, resource }
   catch (error)
-    console.error error
+    logger.error error
     return Failure 'Failed to play the song'
   videoReplyEmbed := buildVideoEmbed info.video_details
   return Success videoReplyEmbed

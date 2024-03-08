@@ -2,3 +2,4 @@
 
 export TOKEN := env.TOKEN!
 export CLIENT_ID := env.CLIENT_ID!
+export SENTRY_DSN := env.SENTRY_DSN!

@@ -2,14 +2,15 @@ import dotenv/config
 { Events, ActivityType } from discord.js
 Sentry from @sentry/node
 
-{ TOKEN } from ./const.civet
+{ TOKEN, SENTRY_DSN } from ./const.civet
 { CommandRouter } from ./router.civet
 { client } from ./client.civet
 { registerApplicationCommands } from ./register.civet
 { voiceMachineActor } from ./machines/voice.civet
+{ logger } from ./logger.civet
 
 Sentry.init {
-  dsn: process.env.SENTRY_DSN!
+  dsn: SENTRY_DSN
   // Performance Monitoring
   tracesSampleRate: 1.0 //  Capture 100% of the transactions
   // Set sampling rate for profiling - this is relative to tracesSampleRate
@@ -23,7 +24,7 @@ await registerApplicationCommands applicationCommands
 
 client
   ||> .on Events.ClientReady, ->
-    console.info 'Scumbot is ready'
+    logger.info 'Scumbot is ready'
     client.user!.setActivity {
       name: 'your mom sunbathing 😎'
       type: ActivityType.Watching
@@ -39,6 +40,6 @@ client
 
 client.on Events.Error, (error) ->
   voiceMachineActor.send type: 'restart'
-  console.error error
+  logger.error error
 
 await client.login TOKEN
