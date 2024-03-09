@@ -14,6 +14,7 @@ export class CommandRouter
 
   private loadRoutes()
     files := await fs.readdir @commandsPath
+
     for file of files
       unless @isInternalFile file
         name := file.replace /\.civet(\.js)?/, ''
@@ -22,25 +23,32 @@ export class CommandRouter
 
   loadCommands()
     await @loadRoutes()
+
     applicationCommands: SlashCommandBuilder[] := []
     commands := new Collection<string, CommandHandler>
     commandsRoutes := Object.entries @routes
+
     for [fileName, filePath] of commandsRoutes
       if @isInternalFile filePath
         continue
+
       absFilePath := path.resolve __dirname, filePath
       module := await import absFilePath
       handler := module.default as CommandHandler
+
       unless handler
         logger.warn `No default export found in ${filePath}`
         continue
+
       name := fileName.replace '/', ''
       commands.set name, handler
+
       if command := module.command
         applicationCommands.push command
       else
         logger.warn `No command found in ${filePath}, this command will not be registered`
-    { commands, applicationCommands }
+
+    return { commands, applicationCommands }
 
   private isInternalFile(filePath: string)
     filePath.startsWith '/_'

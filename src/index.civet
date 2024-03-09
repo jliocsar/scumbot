@@ -32,11 +32,11 @@ client
     return
   ||> .on Events.InteractionCreate, (interaction) ->
     return unless interaction.isChatInputCommand()
+
     if command := commands.get interaction.commandName
       await command interaction
     else
       await interaction.reply { content: 'Unknown command', +ephemeral }
-    return
 
 client.on Events.Error, (error) ->
   voiceMachineActor.send type: 'restart'

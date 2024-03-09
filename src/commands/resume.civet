@@ -2,6 +2,7 @@
 { getVoiceConnection } from @discordjs/voice
 type { CommandHandler } from ../types.civet
 { audioPlayer } from ../audio-player.civet
+{ prefix } from ../helpers/message.civet
 
 export command := new SlashCommandBuilder()
   .setName 'resume'
@@ -10,10 +11,15 @@ export command := new SlashCommandBuilder()
 export default resume: CommandHandler := (interaction) ->
   [guild, member] := [interaction.guild, interaction.member]
   guildMember := member as GuildMember
+
   unless guildMember.voice.channel
-    return interaction.reply 'You need to be in a voice channel to pause the song'
+    return interaction.reply { content: prefix.error('You need to be in a voice channel to pause the song'), +ephemeral }
+
   currentConnection := getVoiceConnection guild!.id
+
   unless currentConnection
-    return interaction.reply 'I am not connected to any voice channel'
+    return interaction.reply { content: prefix.error('I am not connected to any voice channel'), +ephemeral }
+
   unpaused := audioPlayer.unpause()
-  interaction.reply if unpaused then '👌' else 'Nothing to unpause'
+  interaction.reply
+    { content: unpaused ?'👌' : prefix.$('👌', 'Nothing to unpause'), +ephemeral }

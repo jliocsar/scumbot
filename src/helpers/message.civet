@@ -5,6 +5,7 @@ export function buildVideoEmbed(video: YouTubeVideo)
   videoReplyEmbed := new EmbedBuilder()
     .setColor 0x080808
     .setURL video.url
+
   if video.title
     videoReplyEmbed.setTitle video.title!
   if video.description
@@ -29,4 +30,20 @@ export function buildVideoEmbed(video: YouTubeVideo)
       value: video.likes.toString()
       +inline
     }
+
   return videoReplyEmbed
+
+class Prefix
+  $<Prefix extends string, Message extends string>(prefix: Prefix, message: Message)
+    return prefix + ' ' + message as `${Prefix} ${Message}`
+
+  error<Message extends string>(message: Message)
+    return @$ '🐀', message
+
+  success<Message extends string>(message: Message)
+    return @$ '✅', message
+
+  warn<Message extends string>(message: Message)
+    return @$ '⚠️', message
+
+export prefix := new Prefix

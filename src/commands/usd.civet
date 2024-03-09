@@ -1,5 +1,6 @@
 { SlashCommandBuilder } from discord.js
 type { CommandHandler } from ../types.civet
+{ prefix } from ../helpers/message.civet
 
 export command := new SlashCommandBuilder()
   .setName 'usd'
@@ -9,4 +10,4 @@ export default usd: CommandHandler := (interaction) ->
   result := await fetch 'https://economia.awesomeapi.com.br/last/USD-BRL'
   data := await result.json()
   bid := data.USDBRL.bid
-  interaction.reply `R$ ${bid}`
+  interaction.reply prefix.$ 'R$', bid

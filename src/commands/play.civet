@@ -7,6 +7,7 @@ type { CommandHandler } from ../types.civet
 { playAudioResource, joinGuildMemberVoiceChannel, queueSong } from ../helpers/audio-resource.civet
 { voiceMachineActor } from ../machines/voice.civet
 { parseURL } from ../helpers/url.civet
+{ prefix } from ../helpers/message.civet
 
 export command := new SlashCommandBuilder()
   .setName 'play'
@@ -22,59 +23,74 @@ export command := new SlashCommandBuilder()
 
 function timeoutSearch()
   await setTimeout 5_000
-  throw new Error '⏰ The search took too long, try again'
+  throw new Error prefix.$ '⏰', 'The search took too long, try again'
 
 function getVideoInfo(search: string, time: number | null)
   url .= parseURL search |> .data?.href
+
   unless url
     try
       videosFound := await Promise.race [
         playdl.search search, { limit: 1 }
         timeoutSearch()
       ]
+
       unless videosFound?.0
-        return error: '❌ No videos found'
+        return error: 'No videos found'
+
       url = (videosFound as YouTubeVideo[]).0.url
     catch (error)
       return { error: error as Error |> .message }
+
   urlInstance := new URL url
   seek := Number(urlInstance.searchParams.get 't') or time
   info := await playdl.video_info url
-  { info, seek }
+
+  return { info, seek }
 
 export default play: CommandHandler := (interaction) ->
   search .= interaction.options.getString 'search'
   time := interaction.options.getInteger 'time'
+
   unless search
-    return interaction.reply { content: 'You need to provide a search or URL to play', +ephemeral }
+    return interaction.reply { content: prefix.error('You need to provide a search or URL to play'), +ephemeral }
+
   await interaction.deferReply()
+
   try
-    searchingMessage := await interaction.followUp '🔍 Searching for the song...'
+    searchingMessage := await interaction.followUp prefix.$ '🔍', 'Searching for the song...'
     { info, seek, error } := await getVideoInfo search, time
-    if error then return interaction.followUp error
+
+    if error
+      return interaction.followUp error
+
     [guild, member] := [interaction.guild, interaction.member]
     guildId := guild!.id
     { data: connection, error: joinError } := joinGuildMemberVoiceChannel member as GuildMember, guild
-    if errorMessage .= joinError
+
+    if errorMessage: string | null .= joinError
       if joinError is 'Currently playing a song'
         queueSong guildId, interaction.channelId, info!
-        errorMessage += ' -- The song has been added to the queue'
+        errorMessage = prefix.$ '📪', 'Song added to the queue'
       return searchingMessage.edit errorMessage
+
     if subscription := connection!.subscribe audioPlayer
       connection!.on VoiceConnectionStatus.Ready, ->
         { data: embed } := await playAudioResource guildId, info!, seek
         unless embed
-          return searchingMessage.edit '❌ An error occurred while playing the song'
+          return searchingMessage.edit prefix.error 'An error occurred while playing the song'
         searchingMessage.edit {
-          content: '🎧 Now playing'
+          content: prefix.$ '🎧', 'Now playing'
           embeds: [embed]
         }
+
       connection!.on VoiceConnectionStatus.Destroyed, ->
         state := voiceMachineActor.getSnapshot()
           |> .context.state
         unless state.has guildId
-          searchingMessage.edit '❌ Something went wrong here!'
+          searchingMessage.edit prefix.error 'Something went wrong here!'
+
       connection!.on VoiceConnectionStatus.Disconnected, ->
         voiceMachineActor.send { type: 'voice.destroy', guildId }
   catch (error)
-    interaction.followUp content: error as Error |> .message
+    interaction.followUp content: prefix.error(error as Error |> .message)

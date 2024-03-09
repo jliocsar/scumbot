@@ -3,6 +3,7 @@
 type { CommandHandler } from ../types.civet
 { voiceMachineActor } from ../machines/voice.civet
 { playAudioResource } from ../helpers/audio-resource.civet
+{ prefix } from ../helpers/message.civet
 
 export command := new SlashCommandBuilder()
   .setName 'skip'
@@ -11,22 +12,30 @@ export command := new SlashCommandBuilder()
 export default skip: CommandHandler := (interaction) ->
   [guild, member] := [interaction.guild, interaction.member]
   guildMember := member as GuildMember
+
   unless guildMember.voice.channel
-    return interaction.reply 'You need to be in a voice channel to skip the music'
+    return interaction.reply { content: prefix.error('You need to be in a voice channel to skip the music'), +ephemeral }
+
   guildId := guild!.id
   currentConnection := getVoiceConnection guildId
+
   unless currentConnection
-    return interaction.reply 'I am not connected to any/your voice channel'
+    return interaction.reply { content: prefix.error('I am not connected to any/your voice channel'), +ephemeral }
+
   queue := voiceMachineActor
     |> .getSnapshot().context
     |> .queues
     |> .get guildId
+
   unless queue
-    return interaction.reply 'I am not playing any music'
+    return interaction.reply { content: prefix.error('I am not playing any music'), +ephemeral }
   if queue.isEmpty
-    return interaction.reply 'There is no song to skip'
+    return interaction.reply { content: prefix.error('There is no song to skip'), +ephemeral }
+
   { data: next } := queue.next()
+
   unless next
-    return interaction.reply 'There is no song to skip'
+    return interaction.reply { content: prefix.error('There is no song to skip'), +ephemeral }
+
   await playAudioResource guildId, next.info
   interaction.reply { content: '👌', +ephemeral }

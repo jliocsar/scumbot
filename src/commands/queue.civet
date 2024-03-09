@@ -1,6 +1,7 @@
 { SlashCommandBuilder, hyperlink, unorderedList } from discord.js
 type { CommandHandler } from ../types.civet
 { voiceMachineActor } from ../machines/voice.civet
+{ prefix } from ../helpers/message.civet
 
 export command := new SlashCommandBuilder()
   .setName 'queue'
@@ -8,14 +9,23 @@ export command := new SlashCommandBuilder()
 
 export default queue: CommandHandler := (interaction) ->
   guildId := interaction.guildId
+
   unless guildId
-    return interaction.reply 'This command can only be used in a server.'
+    return interaction.reply prefix.error 'This command can only be used in a server.'
+
   { queues } := voiceMachineActor.getSnapshot().context
   queue := queues.get guildId
+
   unless queue
-    return interaction.reply 'There is no queue in this server.'
+    return interaction.reply prefix.$ '📭', 'The queue is empty.'
+
   videos := queue.items
     |> .map ({ info: { video_details: videoDetails } }) ->
       hyperlink videoDetails.title!, new URL videoDetails.url
     |> unorderedList
-  interaction.reply [`Total of ${queue.items.#} videos in the queue`, videos].join '\n'
+  length := queue.items.#
+
+  unless length
+    return interaction.reply prefix.$ '📭', 'The queue is empty.'
+
+  interaction.reply prefix.$ '📬', [`Total of ${length} videos in the queue`, videos].join '\n'

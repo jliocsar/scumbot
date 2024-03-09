@@ -3,6 +3,7 @@
 type { CommandHandler } from ../types.civet
 { audioPlayer } from ../audio-player.civet
 { voiceMachineActor } from ../machines/voice.civet
+{ prefix } from ../helpers/message.civet
 
 export command := new SlashCommandBuilder()
   .setName 'stop'
@@ -11,12 +12,16 @@ export command := new SlashCommandBuilder()
 export default stop: CommandHandler := (interaction) ->
   [guild, member] := [interaction.guild, interaction.member]
   guildMember := member as GuildMember
+
   unless guildMember.voice.channel
-    return interaction.reply 'You need to be in a voice channel to stop the music'
+    return interaction.reply { content: prefix.error('You need to be in a voice channel to stop the music'), +ephemeral }
+
   guildId := guild!.id
   currentConnection := getVoiceConnection guildId
+
   unless currentConnection
-    return interaction.reply 'I am not connected to any voice channel'
+    return interaction.reply { content: prefix.error('I am not connected to any voice channel'), +ephemeral }
+
   audioPlayer.stop()
   voiceMachineActor.send { type: 'queue.clear', guildId }
   currentConnection.destroy()

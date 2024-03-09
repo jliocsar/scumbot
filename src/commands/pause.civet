@@ -2,6 +2,7 @@
 { getVoiceConnection } from @discordjs/voice
 type { CommandHandler } from ../types.civet
 { audioPlayer } from ../audio-player.civet
+{ prefix } from ../helpers/message.civet
 
 export command := new SlashCommandBuilder()
   .setName 'pause'
@@ -10,13 +11,18 @@ export command := new SlashCommandBuilder()
 export default pause: CommandHandler := (interaction) ->
   [guild, member] := [interaction.guild, interaction.member]
   guildMember := member as GuildMember
+
   unless guildMember.voice.channel
-    return interaction.reply 'You need to be in a voice channel to pause the song'
+    return interaction.reply prefix.error 'You need to be in a voice channel to pause the song'
+
   currentConnection := getVoiceConnection guild!.id
+
   unless currentConnection
-    return interaction.reply 'I am not connected to any voice channel'
+    return interaction.reply prefix.error 'I am not connected to any voice channel'
+
   paused := audioPlayer.pause()
+
   interaction.reply {
-    content: if paused then '👌' else 'Nothing to pause'
+    content: if paused then '👌' else prefix.warn 'Nothing to pause'
     +ephemeral
   }

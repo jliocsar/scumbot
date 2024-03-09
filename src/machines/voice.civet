@@ -75,6 +75,7 @@ voiceMachine := createMachine {
       actions: assign {
         resources: ({ context, event }) =>
           resource := event.resource
+
           if context.resources.has resource
             context.resources.delete resource
           else
@@ -82,6 +83,7 @@ voiceMachine := createMachine {
             for [resource, id] of context.resources
               if id is guildId
                 context.resources.delete resource
+
           return context.resources
         queues: ({ context, event }) =>
           guildId := event.guildId

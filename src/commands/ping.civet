@@ -1,8 +1,12 @@
 { SlashCommandBuilder } from discord.js
 type { CommandHandler } from ../types.civet
+{ prefix } from ../helpers/message.civet
 
 export command := new SlashCommandBuilder()
   .setName 'ping'
   .setDescription 'Replies with Pong!'
 
-export default ping: CommandHandler := &.reply { content: 'Pong!', +ephemeral }
+export default ping: CommandHandler := &.reply {
+  content: prefix.$ '🏓', 'Pong!'
+  +ephemeral
+}

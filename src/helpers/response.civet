@@ -1,10 +1,8 @@
 export type Success<T> = { data: T, error: null }
 export type Failure<E extends string = string> = { data: null, error: E }
 
-export function Failure<E extends string = string>(error: E): Failure<E> {
-  return { data: null, error }
-}
+export function Failure<E extends string = string>(error: E): Failure<E>
+  { data: null, error }
 
-export function Success<T>(data: T): Success<T> {
-  return { data, error: null }
-}
+export function Success<T>(data: T): Success<T>
+  { data, error: null }
