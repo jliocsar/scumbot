@@ -14,12 +14,12 @@ export command := new SlashCommandBuilder()
   .setDescription 'Plays a YouTube song'
   .addStringOption
     &.setName 'search'
-    |> .setDescription 'The search or URL of the song to play'
-    |> .setRequired true
+      |> .setDescription 'The search or URL of the song to play'
+      |> .setRequired true
   .addIntegerOption
     &.setName 'time'
-    |> .setDescription 'The `t` time to start the song at'
-    |> .setRequired false
+      |> .setDescription 'The `t` time to start the song at'
+      |> .setRequired false
 
 function timeoutSearch()
   await setTimeout 5_000

@@ -23,9 +23,11 @@
     "discord.js": "~14.12.1",
     "dotenv": "~16.4.5",
     "ffmpeg-static": "~5.2.0",
+    "nhttp-land": "~1.3.25",
     "pino": "~8.19.0",
     "pino-pretty": "~10.3.1",
     "play-dl": "~1.9.7",
+    "pretty-ms": "~9.0.0",
     "tweetnacl": "~1.0.3",
     "xstate": "~5.9.1"
   }

@@ -1,0 +1,40 @@
+nhttp from nhttp-land
+prettyMs from pretty-ms
+{ logger } from ./logger.civet
+
+function time()
+  return new Date().getTime()
+
+start := time()
+
+function uptime()
+  return prettyMs time() - start
+
+export function startServer()
+  app := nhttp()
+    |> .get('/', -> `
+      <html>
+        <head>
+          <title>Scumbot</title>
+        </head>
+        <body>
+          <h1>Scumbot</h1>
+          <h2>F.O.A.D.</h2>
+          <div style="display: flex; align-items: center; gap: 0.25rem;">
+            <b>Uptime:</b>
+            <p>${uptime()}</p>
+          </div>
+          <iframe
+            width="560"
+            height="315"
+            src="https://www.youtube.com/embed/T-ZH-OvbQyg?si=1V5y9Sbmz_ptmZaP?autoplay=1"
+            title="YouTube video player"
+            frameborder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allowfullscreen
+          ></iframe>
+        </body>
+      </html>
+    `)
+    |> .listen 3000
+  logger.info 'Server started on port 3000'

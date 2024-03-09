@@ -8,6 +8,7 @@ Sentry from @sentry/node
 { registerApplicationCommands } from ./register.civet
 { voiceMachineActor } from ./machines/voice.civet
 { logger } from ./logger.civet
+{ startServer } from ./server.civet
 
 Sentry.init {
   dsn: SENTRY_DSN
@@ -23,6 +24,7 @@ router := new CommandRouter
 await registerApplicationCommands applicationCommands
 
 client
+  // Starts watching your mom
   ||> .on Events.ClientReady, ->
     logger.info 'Scumbot is ready'
     client.user!.setActivity {
@@ -30,6 +32,8 @@ client
       type: ActivityType.Watching
     }
     return
+  // And listens to any slash command
+  // The router matches the command and calls the appropriate handler
   ||> .on Events.InteractionCreate, (interaction) ->
     return unless interaction.isChatInputCommand()
 
@@ -38,8 +42,13 @@ client
     else
       await interaction.reply { content: 'Unknown command', +ephemeral }
 
+// Restarts the entire state machine on any client error
 client.on Events.Error, (error) ->
   voiceMachineActor.send type: 'restart'
   logger.error error
+
+// Starts listening on port 3000, just so we have a
+// fancy ass web page
+startServer()
 
 await client.login TOKEN
