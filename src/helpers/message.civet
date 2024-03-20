@@ -1,6 +1,10 @@
 type { YouTubeVideo } from play-dl
 { EmbedBuilder, inlineCode } from discord.js
 
+function truncate(text: string, limit: number)
+  return text if text.length <= limit
+  return text |> .slice 0, limit |> & + '...'
+
 export function buildVideoEmbed(video: YouTubeVideo)
   videoReplyEmbed := new EmbedBuilder()
     .setColor 0x080808
@@ -9,7 +13,8 @@ export function buildVideoEmbed(video: YouTubeVideo)
   if video.title
     videoReplyEmbed.setTitle video.title!
   if video.description
-    videoReplyEmbed.setDescription video.description!
+    description := truncate video.description, 200
+    videoReplyEmbed.setDescription description
   if video.thumbnails.# > 0
     videoReplyEmbed.setThumbnail video.thumbnails.0.url
   if video.durationInSec
