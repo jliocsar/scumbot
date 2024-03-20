@@ -37,5 +37,12 @@ export default skip: CommandHandler := (interaction) ->
   unless next
     return interaction.reply { content: prefix.error('There is no song to skip'), +ephemeral }
 
-  await playAudioResource guildId, next.info
-  interaction.reply { content: '👌', +ephemeral }
+  { data: embed } := await playAudioResource guildId, next.info
+
+  unless embed
+    return voiceMachineActor.send { type: 'voice.destroy', guildId }
+
+  interaction.reply {
+    content: '🎧 Changing to'
+    embeds: [embed]
+  }
